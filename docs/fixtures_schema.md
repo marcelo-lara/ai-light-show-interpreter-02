@@ -1,0 +1,66 @@
+# Fixture Schema
+
+Fixture data is split across instance records and template records under `data/fixtures/`.
+
+## 1. Fixture instances
+
+`data/fixtures/fixtures.json` stores real fixtures in the show.
+
+Each instance row contains:
+- `id`: runtime fixture id.
+- `name`: display name.
+- `fixture`: template key (current data uses keys like `fixture.moving_head.mini_beam_prism`).
+- `base_channel`: 1-based starting channel.
+- `location`: physical coordinates `{x, y, z}`.
+
+Example:
+
+```json
+{
+  "id": "mini_beam_prism_l",
+  "name": "Mini Beam Prism (L)",
+  "fixture": "fixture.moving_head.mini_beam_prism",
+  "base_channel": 42,
+  "location": {"x": 0.15, "y": 0.2, "z": 0.0}
+}
+```
+
+## 2. Fixture templates
+
+Each reusable fixture model is a file named `data/fixtures/fixture.<type>.<model>.json`.
+
+Template fields:
+- `id`: model id (for example `mini_beam_prism`).
+- `type`: fixture category (for example `moving_head`, `parcan`).
+- `channels`: channel-name to zero-based offset mapping.
+- `effects`: effect ids that this model declares.
+- `physical_movement`: optional real travel-time metadata used for movement estimation.
+- `meta_channels`: high-level controls used by frontend/API.
+- `mappings`: enum/label mappings.
+
+`physical_movement` fields:
+- `pan_full_travel_seconds`: real time for a full-range pan move from `0` to `65535`.
+- `tilt_full_travel_seconds`: real time for a full-range tilt move from `0` to `65535`.
+
+`meta_channels` fields:
+- `label`
+- `kind`: `u8` | `u16` | `rgb` | `enum`
+- `channel` (single channel name)
+- `channels` (multi-channel names, e.g. pan/tilt MSB/LSB)
+- `mapping` (mapping key in `mappings`)
+- `step` (optional enum step semantics)
+- `arm` (optional startup/default value)
+- `hidden` (optional UI hint)
+
+## Channel addressing rule
+
+Template channel numbers are offsets from instance `base_channel`:
+
+```text
+absolute_channel = base_channel + offset
+```
+
+Example:
+- `base_channel = 42`
+- template offset for `dim` = `5`
+- absolute DMX channel = `47`
