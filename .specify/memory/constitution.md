@@ -1,50 +1,56 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+- Version change: Initial Draft -> 1.0.0
+- List of modified principles:
+  - Added "Strict Read-Only Data Policy"
+  - Added "Single Output Target"
+  - Added "Core Pipeline"
+  - Added "Docker-First Environment"
+  - Added "Defined Inputs and Fallbacks"
+- Added sections: Core Principles, Governance
+- Removed sections: N/A (Initial Template)
+- Templates requiring updates: 
+  - ⚠ `.specify/templates/plan-template.md`
+  - ⚠ `.specify/templates/spec-template.md`
+  - ⚠ `.specify/templates/tasks-template.md`
+- Follow-up TODOs: None.
+-->
+
+# ai-light-show-interpreter-02 Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Strict Read-Only Data Policy
+The `/data` folder is strictly read-only. We must never mutate source audio, artifacts, or intelligence outputs. This ensures data integrity from the upstream song analyzer and prevents accidental corruption of the semantic intelligence artifacts.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Single Output Target
+The ONLY write operation allowed by this repository is compiling `.dmx` binary show files (e.g., `[Song].show_[Date].dmx`) inside the `/data/shows/` directory. All other files and directories within the `/data` folder are strictly off-limits for write operations. No other artifacts or intermediate data are generated.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Core Pipeline (The Baker)
+The rendering pipeline operates strictly as a rasterizer and baker. It must follow this exact sequence:
+1. **Coordinate Lookup**: Retrieve $(x, y)$ positions for each fixture defined in the Stage Virtual Canvas.
+2. **Smoothing & Evaluation**: Apply configurable exponential smoothing (attack/release envelopes) to raw audio (FFT bands) for every 20ms frame (at 50 FPS), then evaluate the mathematical state of the canvas.
+3. **Rasterization**: Sample color and brightness at each fixture's coordinate on the 2D grid.
+4. **Baking**: Write the sampled results directly into the binary DMX frame.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Docker-First Environment
+All implementations, tasks, and scripts must be run inside Docker containers. Local virtual environments are strictly prohibited. Temporary patching code, one-off scripts, or scaffolding files must always be cleaned up after use. A full smoke test must be performed by rebuilding the Docker container (e.g., `docker compose build` or `docker compose up -d --build`) at the end of feature implementation to verify correctness.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Defined Inputs and Fallbacks
+The interpreter consumes specific semantic artifacts:
+* `sections.json`: Determines section-based rendering structure/logic.
+* `essentia/fft_bands.json`: Provides raw, frame-by-frame frequency energy levels.
+* `song_event_timeline.json`: (Optional) Triggers instantaneous mathematical "Hard Cuts" or coordinate shifts. If missing or untrusted, the system MUST fallback to dynamically detecting transients (sudden energy spikes) directly from the `essentia/fft_bands.json` stream.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### VI. Code Organization and Structure
+Do not create large files. As a guideline, files should generally not exceed 200 lines (though this is not a strict limit). Instead of large monolithic files, create well-organized folders with intended purposes and modularized code. ALWAYS follow best practices for Python development.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+All scripts, agents, and contributors must verify compliance with these core principles. The read-only data policy and Docker environment constraints are absolute. 
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- **Amendment Procedure**: Any changes to these core principles or architecture must be updated in this constitution and submitted as a dedicated pull request.
+- **Versioning Policy**: Major version increments for architectural changes, Minor for added principles, Patch for clarifications.
+- **Compliance Review**: Agents executing plans or creating specifications must explicitly verify alignment with the "Single Output Target" and "Docker-First" rules before proposing changes.
+
+**Version**: 1.0.0 | **Ratified**: 2026-04-27 | **Last Amended**: 2026-04-27
