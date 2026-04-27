@@ -9,7 +9,7 @@ import numpy as np
 class MusicalStateBuffer(TypedDict):
     """The `q_buffer` injected into all shaders per 20ms frame."""
     time: float
-    bands: np.ndarray # Shape (5,)
+    bands: np.ndarray  # Shape (5,)
     intensity_hit: float
     cumulative_rotation: float
     mid_warp: float
@@ -25,7 +25,8 @@ class EvaluatorInterface:
 
     def _build_mesh(self, fixtures: list[dict]) -> np.ndarray:
         """
-        Extract exact static (washer) and dynamic (moving head) coordinates
+        Extract exact fixed-sample fixture coordinates from the derived virtual canvas.
+        Moving heads carry named POI targets in v1 but still resolve to a single sampling coordinate per frame.
         Returns: NumPy array of shape (N, 2) where N is number of fixtures.
         """
         pass

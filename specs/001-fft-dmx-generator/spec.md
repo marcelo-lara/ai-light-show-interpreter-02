@@ -1,8 +1,8 @@
 # Feature Specification: Audio to DMX Generator with CLI
 
-**Feature Branch**: `[###-feature-name]`  
+**Feature Branch**: `001-fft-dmx-generator`  
 **Created**: 2026-04-27
-**Status**: Draft  
+**Status**: Ready for Planning  
 **Input**: User description: "CLI-UI the entrypoint of this python application should be a list of the songs from data/songs/*.mp3 without the file extension. an '▶' should be on the left of each song item, and use the cursor keys to move between songs, and 'enter' to select a song. As a performer, I want my lights to react to 5-band FFT energy so that the visual intensity matches the timbral complexity of my music. at the end, I need to have a binary DMX file to perform the show."
 
 ## User Scenarios & Testing *(mandatory)*
@@ -33,16 +33,16 @@ As a performer, I want the system to analyze the selected song using a 5-band FF
 
 **Acceptance Scenarios**:
 
-1. **Given** a song has been selected, **When** the application processes it, **Then** it isolates the audio into 5 distinct frequency bands.
-2. **Given** the 5-band FFT energy is extracted, **When** generating the light show, **Then** the visual intensity maps to the energy levels of these bands.
-3. **Given** the processing is complete, **When** the application finishes, **Then** a binary DMX file is produced for use in the performance.
+1. **Given** a song has been selected and its 5-band analysis is available, **When** the application processes it, **Then** it uses exactly 5 energy bands to drive the light show.
+2. **Given** the 5-band energy is available, **When** generating the light show, **Then** the visual intensity changes in proportion to those energy levels.
+3. **Given** the processing is complete, **When** the application finishes, **Then** a binary DMX show file is produced for use in the performance.
 
 ### Edge Cases
 
-- What happens if the `data/songs/` directory is empty or missing?
-- What happens if the selected mp3 file is corrupted or unreadable?
-- How does the system handle extremely quiet or silent parts of a song?
-- What happens if the user interrupts the processing generation with Ctrl+C?
+- If the song directory is empty or missing, the system shows a clear message and exits without starting processing.
+- If the selected song or its required analysis inputs are unreadable or invalid, the system aborts with a clear error and does not write a partial show file.
+- During extremely quiet or silent passages, the system still emits valid low-intensity DMX frames instead of failing or producing undefined values.
+- If the user interrupts generation with Ctrl+C, the system stops cleanly and does not leave a partial output file behind.
 
 ## Requirements *(mandatory)*
 
@@ -53,28 +53,19 @@ As a performer, I want the system to analyze the selected song using a 5-band FF
 - **FR-003**: System MUST provide visual feedback of the currently focused item using a '▶' character on the left side.
 - **FR-004**: System MUST allow navigation through the song list using the up and down cursor keys.
 - **FR-005**: System MUST accept the user's selection when the 'Enter' key is pressed.
-- **FR-006**: System MUST process the selected audio file using Fast Fourier Transform (FFT) analysis.
-- **FR-007**: System MUST map the audio into exactly 5 distinct energy bands to capture timbral complexity.
+- **FR-006**: System MUST process the selected song using an available 5-band FFT analysis.
+- **FR-007**: System MUST use exactly 5 distinct energy bands to capture timbral complexity.
 - **FR-008**: System MUST map the 5-band FFT energy onto a 2D virtual stage canvas.
-- **FR-010**: System MUST interpret fixtures based on a configuration file (`stage_virtual_canvas.json`).
-- **FR-011**: System MUST support distinct fixture behaviors: static washers (e.g., parcans) that cover fixed areas, and moving heads capable of illuminating any specified point on the 2D canvas.
-- **FR-012**: System MUST determine fixture coverage by looking up their 2D coordinates defined in the configuration manifest.
-- **FR-013**: System MUST include a procedural pattern engine (shader engine) capable of rendering geometric visualizations (e.g., linear waves, radial circular pulses) across the 2D stage canvas.
-- **FR-014**: System MUST allow pattern generators to calculate intensities for any 2D coordinate based on continuous variables including time, spatial configuration (e.g., angle), and audio-driven parameters (speed, frequency).
-- **FR-015**: System MUST maintain a global musical state buffer that tracks instantaneous and cumulative audio metrics (e.g., hit intensity, cumulative rotation) to provide continuous context to all pattern generators.
-- **FR-016**: System MUST support layer blending, allowing multiple procedural patterns to be composited together to form complex visual outputs.
-- **FR-017**: System MUST support spatial coordinate distortion (warping), enabling audio features (e.g., mid-range energy) to dynamically shift the 2D sampling coordinates of fixtures prior to pattern evaluation.
-- **FR-018**: System MUST implement specific procedural pattern types including Radial Pulses (e.g., for transient, high-energy events like drum hits) and Linear Waves (e.g., for steady, ambient frequency bands).
-- **FR-010**: System MUST interpret fixtures based on a configuration file (`stage_virtual_canvas.json`).
-- **FR-011**: System MUST support distinct fixture behaviors: static washers (e.g., parcans) that cover fixed areas, and moving heads capable of illuminating any specified point on the 2D canvas.
-- **FR-012**: System MUST determine fixture coverage by looking up their 2D coordinates defined in the configuration manifest.
-- **FR-013**: System MUST include a procedural pattern engine (shader engine) capable of rendering geometric visualizations (e.g., linear waves, radial circular pulses) across the 2D stage canvas.
-- **FR-014**: System MUST allow pattern generators to calculate intensities for any 2D coordinate based on continuous variables including time, spatial configuration (e.g., angle), and audio-driven parameters (speed, frequency).
-- **FR-015**: System MUST maintain a global musical state buffer that tracks instantaneous and cumulative audio metrics (e.g., hit intensity, cumulative rotation) to provide continuous context to all pattern generators.
-- **FR-016**: System MUST support layer blending, allowing multiple procedural patterns to be composited together to form complex visual outputs.
-- **FR-017**: System MUST support spatial coordinate distortion (warping), enabling audio features (e.g., mid-range energy) to dynamically shift the 2D sampling coordinates of fixtures prior to pattern evaluation.
-- **FR-018**: System MUST implement specific procedural pattern types including Radial Pulses (e.g., for transient, high-energy events like drum hits) and Linear Waves (e.g., for steady, ambient frequency bands).
 - **FR-009**: System MUST generate and save the resulting light show as a binary DMX file.
+- **FR-010**: System MUST interpret fixture positions and stage metadata from configuration inputs representing the virtual stage canvas.
+- **FR-011**: System MUST support distinct fixture behaviors for fixed washers and moving heads that target named stage points.
+- **FR-012**: System MUST determine fixture sampling and targeting from configured stage coordinates and named target points.
+- **FR-013**: System MUST include a procedural pattern engine (shader engine) capable of rendering geometric visualizations (e.g., linear waves, radial circular pulses) across the 2D stage canvas.
+- **FR-014**: System MUST allow pattern generators to calculate intensities for any 2D coordinate based on continuous variables including time, spatial configuration (e.g., angle), and audio-driven parameters (speed, frequency).
+- **FR-015**: System MUST maintain a global musical state buffer that tracks instantaneous and cumulative audio metrics (e.g., hit intensity, cumulative rotation) to provide continuous context to all pattern generators.
+- **FR-016**: System MUST support layer blending, allowing multiple procedural patterns to be composited together to form complex visual outputs.
+- **FR-017**: System MUST support spatial coordinate distortion (warping), enabling audio features (e.g., mid-range energy) to dynamically shift the 2D sampling coordinates of fixtures prior to pattern evaluation.
+- **FR-018**: System MUST implement specific procedural pattern types including Radial Pulses (e.g., for transient, high-energy events like drum hits) and Linear Waves (e.g., for steady, ambient frequency bands).
 
 ### Key Entities
 
@@ -98,7 +89,9 @@ As a performer, I want the system to analyze the selected song using a 5-band FF
 
 ## Assumptions
 
-- Python is executed in a terminal environment that supports Standard ANSI escape sequences or comparable TUI libraries to render the selection menu.
+- The application runs in an interactive terminal environment that can display a navigable song-selection interface.
+- Each selectable song has a corresponding precomputed 5-band analysis input available to the system.
+- Stage rig configuration and named target points are available from existing configuration inputs.
 - The 5-band FFT ranges will follow standard audio engineering subdivisions (e.g., Sub-bass, Bass, Low-Mid, High-Mid, High) unless specified otherwise.
 - The output DMX universe or channel mappings will rely on a predefined default schema if not explicitly customized.
 - All target MP3 files are decoded properly  without DRM restrictions.

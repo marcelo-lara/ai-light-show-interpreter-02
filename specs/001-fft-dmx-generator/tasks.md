@@ -12,8 +12,8 @@
    - **Files to create/modify**: `Dockerfile`, `docker-compose.yml` 
 
 2. **[  ] [P] [US1] Stage Virtual Canvas Config**
-   - **Goal**: Create the default JSON schema for reading fixture locations.
-   - **Instructions**: Create `src/config/stage_virtual_canvas.json` representing some washers and spots on a 10x5m grid according to Data Model.
+   - **Goal**: Create the app-specific virtual canvas metadata layered on top of the rig inputs.
+   - **Instructions**: Create `src/config/stage_virtual_canvas.json` representing washers and moving heads on a 10x5m grid, derived from `data/fixtures/fixtures.json` and `data/fixtures/pois.json` according to the Data Model.
    - **Dependencies**: None
    - **Files to create/modify**: `src/config/stage_virtual_canvas.json`
 
@@ -27,13 +27,13 @@
 
 4. **[  ] [P] [US2] Musical State Buffer (Q-Buffer)**
    - **Goal**: Build data structure for smoothing audio into spatial properties.
-   - **Instructions**: Create `src/engine/_q_buffer.py`. Implement class parsing `data/essentia/fft_bands.json` frame by frame, outputting a `MusicalStateBuffer` dict (bands, mid_warp, etc.).
+   - **Instructions**: Create `src/engine/_q_buffer.py`. Implement class parsing `data/artifacts/<Song - Artist>/essentia/fft_bands.json` frame by frame, outputting a `MusicalStateBuffer` dict (`time`, `bands`, `intensity_hit`, `cumulative_rotation`, `mid_warp`).
    - **Dependencies**: None
    - **Files to create/modify**: `src/engine/_q_buffer.py`
 
 5. **[  ] [ ] [US2] Evaluator Interface/Mesh**
    - **Goal**: Implement physical mappings and evaluate logic.
-   - **Instructions**: Create `src/engine/evaluator.py`. Map `stage_virtual_canvas.json` array to NumPy (N, 2). Provide the `evaluate_frame` matrix math skeleton. 
+   - **Instructions**: Create `src/engine/evaluator.py`. Combine the derived `stage_virtual_canvas.json` metadata with rig and POI inputs, map the resulting fixture coordinates to NumPy (N, 2), and provide the `evaluate_frame` matrix math skeleton. 
    - **Dependencies**: Task 2, Task 4
    - **Files to create/modify**: `src/engine/evaluator.py`
 
