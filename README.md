@@ -21,6 +21,27 @@ A hybrid configuration model defines the virtual-to-physical mapping:
 * **Canonical Rig Inputs:** `data/fixtures/fixtures.json` and `data/fixtures/pois.json` define fixture identity, physical placement, and named moving-head targets.
 * **Virtual Canvas Metadata:** `src/config/stage_virtual_canvas.json` defines app-specific sampling/grouping metadata layered on top of the rig inputs.
 
+### Current Rig Layout
+The current normalized fixture layout in `data/fixtures/fixtures.json` is:
+
+* `mini_beam_prism_l`: `(0.15, 0.20)`
+* `mini_beam_prism_r`: `(0.985, 0.20)`
+* `head_el150`: `(0.40, 0.00)`
+* `parcan_pl`: `(0.20, 0.10)`
+* `parcan_l`: `(0.40, 0.00)`
+* `parcan_r`: `(0.60, 0.00)`
+* `parcan_pr`: `(0.80, 0.10)`
+
+These map onto the current 10x5 virtual canvas in `src/config/stage_virtual_canvas.json` as:
+
+* `mini_beam_prism_l`: `(1.5, 1.0)`
+* `mini_beam_prism_r`: `(9.85, 1.0)`
+* `head_el150`: `(4.0, 0.0)`
+* `parcan_pl`: `(2.0, 0.5)`
+* `parcan_l`: `(4.0, 0.0)`
+* `parcan_r`: `(6.0, 0.0)`
+* `parcan_pr`: `(8.0, 0.5)`
+
 ### Output: Production-Grade DMX Binary
 **Strict Output Rule:** This repository ONLY writes compiled show files to the `data/shows/` directory. All other files and directories within the `/data` folder are strictly **READ-ONLY** for this repository. No other artifacts or intermediate data are generated.
 
@@ -36,7 +57,41 @@ The final output is a show file following the **DMX Binary Specification** (e.g.
 3.  **Rasterization:** The system "samples" the color and brightness at each fixture's coordinate.
 4.  **Baking:** Sampled results are written directly into the binary DMX frame.
 
-## 4. Professional-Grade Features
+## 4. Running the Interpreter in Docker
+
+1. Build the Docker image:
+
+```bash
+docker compose build
+```
+
+2. Run the interactive song selector and render a show:
+
+```bash
+docker compose run --rm light-show-cli --show-name main-show
+```
+
+3. The selector will mark songs that are missing analyzer artifacts with ` [MISSING ARTIFACT]`.
+
+4. If you need to render non-interactively, you can still pass the same `--show-name` flag and the tool will write the compiled DMX to `data/shows/`.
+
+5. To export a debug SVG of the current fixture and POI layout without opening the player:
+
+```bash
+docker compose run --rm light-show-cli --export-layout
+```
+
+The SVG includes moving-head beam lines pointing to each fixture's current default `target_poi`.
+
+6. Verify the output file exists:
+
+```bash
+ls -lh data/shows/*.dmx
+```
+
+> Note: `./data` is mounted read-only, while `./data/shows` is mounted writable. All other input data remains protected.
+
+## 5. Professional-Grade Features
 * **Separation of Concerns:** Intent is stored in human-readable math/coordinates; execution is stored in lean binary.
 * **Sample-Accurate Sync:** Pre-rendering eliminates real-time jitter and CPU-induced lag.
 * **Volumetric Scaling:** Upgrading a rig only requires updating the **Stage Virtual Canvas** coordinates; the artistic logic remains untouched.

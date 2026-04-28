@@ -1,0 +1,13 @@
+services:
+  light-show-cli:
+    build: .
+    tty: true
+    stdin_open: true
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+      - ./data:/app/data:ro
+      - ./data/shows:/app/data/shows:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: []

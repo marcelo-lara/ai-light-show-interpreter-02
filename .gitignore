@@ -1,2 +1,20 @@
-data
-data/
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Generated outputs
+data/shows/
+data/output/
+
+# Editor and OS
+.DS_Store
+*.swp
+*.log
+*.tmp
+.vscode/
+.idea/

@@ -101,19 +101,40 @@
   },
   "fixtures": [
     {
-      "id": "parcan_1",
+      "id": "parcan_pl",
       "type": "washer",
-      "position": [2.5, 5.0], // x, y
-      "source_fixture_id": "wash_stage_left",
-      "group": "stage_left_wash"
+      "position": [2.0, 0.5], // x, y
+      "source_fixture_id": "parcan_pl",
+      "group": "washers"
     },
     {
-      "id": "moving_head_1",
+      "id": "parcan_l",
+      "type": "washer",
+      "position": [4.0, 0.0],
+      "source_fixture_id": "parcan_l",
+      "group": "washers"
+    },
+    {
+      "id": "parcan_r",
+      "type": "washer",
+      "position": [6.0, 0.0],
+      "source_fixture_id": "parcan_r",
+      "group": "washers"
+    },
+    {
+      "id": "parcan_pr",
+      "type": "washer",
+      "position": [8.0, 0.5],
+      "source_fixture_id": "parcan_pr",
+      "group": "washers"
+    },
+    {
+      "id": "mini_beam_prism_r",
       "type": "moving_head",
-      "position": [7.5, 0.0],
-      "target_poi": "center_stage",
-      "source_fixture_id": "mini_beam_prism_l",
-      "group": "fx_heads"
+      "position": [9.85, 1.0],
+      "target_poi": "wall_art_right",
+      "source_fixture_id": "mini_beam_prism_r",
+      "group": "moving_heads"
     }
   ]
 }

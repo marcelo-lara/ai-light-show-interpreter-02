@@ -1,0 +1,206 @@
+{
+  "canvas": {
+    "width": 10.0,
+    "height": 5.0
+  },
+  "pois": [
+    {
+      "id": "server",
+      "source_poi_id": "server",
+      "position": [0.6, 0.4],
+      "group": "room"
+    },
+    {
+      "id": "tv",
+      "source_poi_id": "tv",
+      "position": [2.2, 0.05],
+      "group": "room"
+    },
+    {
+      "id": "mic",
+      "source_poi_id": "mic",
+      "position": [3.9, 0.4],
+      "group": "performer"
+    },
+    {
+      "id": "piano_left",
+      "source_poi_id": "piano_left",
+      "position": [1.6, 0.85],
+      "group": "performer"
+    },
+    {
+      "id": "piano_center",
+      "source_poi_id": "piano_center",
+      "position": [2.8, 0.85],
+      "group": "performer"
+    },
+    {
+      "id": "piano_right",
+      "source_poi_id": "piano_right",
+      "position": [4.0, 0.85],
+      "group": "performer"
+    },
+    {
+      "id": "dark",
+      "source_poi_id": "dark",
+      "position": [2.0, 1.55],
+      "group": "desk_zone"
+    },
+    {
+      "id": "dark_desk",
+      "source_poi_id": "dark_desk",
+      "position": [0.8, 1.5],
+      "group": "desk_zone"
+    },
+    {
+      "id": "table_back",
+      "source_poi_id": "table_back",
+      "position": [4.9, 1.95],
+      "group": "center_stage"
+    },
+    {
+      "id": "table_center",
+      "source_poi_id": "table_center",
+      "position": [4.9, 2.6],
+      "group": "center_stage"
+    },
+    {
+      "id": "table_front",
+      "source_poi_id": "table_front",
+      "position": [4.9, 3.3],
+      "group": "center_stage"
+    },
+    {
+      "id": "inblue",
+      "source_poi_id": "inblue",
+      "position": [2.1, 3.4],
+      "group": "desk_zone"
+    },
+    {
+      "id": "inblue_desk",
+      "source_poi_id": "inblue_desk",
+      "position": [0.8, 3.0],
+      "group": "desk_zone"
+    },
+    {
+      "id": "guest_desk",
+      "source_poi_id": "guest_desk",
+      "position": [0.8, 4.45],
+      "group": "desk_zone"
+    },
+    {
+      "id": "sofa01",
+      "source_poi_id": "sofa01",
+      "position": [8.3, 1.55],
+      "group": "sofa_zone"
+    },
+    {
+      "id": "sofa00",
+      "source_poi_id": "sofa00",
+      "position": [8.3, 2.1],
+      "group": "sofa_zone"
+    },
+    {
+      "id": "sofa02",
+      "source_poi_id": "sofa02",
+      "position": [8.3, 2.65],
+      "group": "sofa_zone"
+    },
+    {
+      "id": "wall_art_left",
+      "source_poi_id": "wall_art_left",
+      "position": [9.85, 1.65],
+      "group": "room"
+    },
+    {
+      "id": "wall_art_center",
+      "source_poi_id": "wall_art_center",
+      "position": [9.85, 2.4],
+      "group": "room"
+    },
+    {
+      "id": "wall_art_right",
+      "source_poi_id": "wall_art_right",
+      "position": [9.85, 3.05],
+      "group": "room"
+    },
+    {
+      "id": "door",
+      "source_poi_id": "door",
+      "position": [9.85, 4.2],
+      "group": "room"
+    },
+    {
+      "id": "board_right",
+      "source_poi_id": "board_right",
+      "position": [3.1, 4.925],
+      "group": "room"
+    },
+    {
+      "id": "board_center",
+      "source_poi_id": "board_center",
+      "position": [5.4, 4.925],
+      "group": "room"
+    },
+    {
+      "id": "board_left",
+      "source_poi_id": "board_left",
+      "position": [7.7, 4.925],
+      "group": "room"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "mini_beam_prism_l",
+      "type": "moving_head",
+      "position": [1.5, 1.0],
+      "source_fixture_id": "mini_beam_prism_l",
+      "target_poi": "piano_left",
+      "group": "moving_heads"
+    },
+    {
+      "id": "mini_beam_prism_r",
+      "type": "moving_head",
+      "position": [9.85, 1.0],
+      "source_fixture_id": "mini_beam_prism_r",
+      "target_poi": "wall_art_right",
+      "group": "moving_heads"
+    },
+    {
+      "id": "head_el150",
+      "type": "moving_head",
+      "position": [4.0, 0.0],
+      "source_fixture_id": "head_el150",
+      "target_poi": "table_center",
+      "group": "moving_heads"
+    },
+    {
+      "id": "parcan_l",
+      "type": "washer",
+      "position": [4.0, 0.0],
+      "source_fixture_id": "parcan_l",
+      "group": "washers"
+    },
+    {
+      "id": "parcan_r",
+      "type": "washer",
+      "position": [6.0, 0.0],
+      "source_fixture_id": "parcan_r",
+      "group": "washers"
+    },
+    {
+      "id": "parcan_pl",
+      "type": "washer",
+      "position": [2.0, 0.5],
+      "source_fixture_id": "parcan_pl",
+      "group": "washers"
+    },
+    {
+      "id": "parcan_pr",
+      "type": "washer",
+      "position": [8.0, 0.5],
+      "source_fixture_id": "parcan_pr",
+      "group": "washers"
+    }
+  ]
+}
