@@ -11,5 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app
 
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PYTEST_ADDOPTS="-o cache_dir=/tmp/pytest-cache"
 ENTRYPOINT ["python", "-m", "src.main"]

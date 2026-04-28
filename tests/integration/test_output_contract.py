@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 from src.io.show_compiler import compile_dmx_show
@@ -32,3 +33,16 @@ def test_dmx_header_structure_matches_spec(tmp_path: Path) -> None:
     assert int.from_bytes(blob[6:8], "little") == 1
     assert int.from_bytes(blob[12:16], "little") == 50
     assert len(blob) == 32 + 2 * 516
+
+
+def test_render_duration_stays_within_sixty_seconds(tmp_path: Path) -> None:
+    song_path = Path("data/songs/Cinderella - Ella Lee.mp3")
+    output_dir = tmp_path / "shows"
+    output_dir.mkdir(parents=True)
+
+    start = time.perf_counter()
+    output_path = compile_dmx_show(song_path, "timed-render", shows_root=output_dir)
+    elapsed = time.perf_counter() - start
+
+    assert output_path.exists()
+    assert elapsed < 60.0

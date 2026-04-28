@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-fft-dmx-generator`  
 **Created**: 2026-04-27
-**Status**: Ready for Implementation  
+**Status**: Implemented and Validated  
 **Input**: User description: "CLI-UI the entrypoint of this python application should be a list of the songs from data/songs/*.mp3 without the file extension. an '▶' should be on the left of each song item, and use the cursor keys to move between songs, and 'enter' to select a song. As a performer, I want my lights to react to 5-band FFT energy so that the visual intensity matches the timbral complexity of my music. at the end, I need to have a binary DMX file to perform the show."
 
 ## User Scenarios & Testing *(mandatory)*
@@ -34,7 +34,7 @@ As a performer, I want the system to use the selected song's precomputed 5-band 
 
 **Acceptance Scenarios**:
 
-1. **Given** a song has been selected and its 5-band analysis is available, **When** the application processes it, **Then** it uses exactly 5 energy bands to drive the light show.
+1. **Given** a song has been selected and its FFT analysis is available, **When** the application processes it, **Then** it resolves that input into exactly 5 canonical energy bands to drive the light show.
 2. **Given** the 5-band energy is available, **When** generating the light show, **Then** the visual intensity changes in proportion to those energy levels.
 3. **Given** section metadata exists for the selected song, **When** the application generates the show, **Then** it can vary rendering behavior across the song structure.
 4. **Given** validated event cue data is available from the optional event layer, **When** the application generates the show, **Then** it may use that cue data to trigger discrete visual accents.
@@ -47,7 +47,7 @@ As a performer, I want the system to use the selected song's precomputed 5-band 
 
 - If the song directory is empty or missing, the system shows a clear message and exits without starting processing.
 - If the selected song or its required analysis inputs are unreadable or invalid, the system aborts with a clear error and does not write a partial show file.
-- If any FFT frame does not contain exactly 5 energy values, the system aborts with a clear error and does not attempt rendering.
+- If any FFT frame cannot be resolved into exactly 5 canonical energy values from a supported upstream layout, the system aborts with a clear error and does not attempt rendering.
 - If required beat and duration metadata is missing or malformed, the system aborts with a clear error and does not attempt cue validation or output generation.
 - If optional event cue data is missing or invalid, the system continues by deriving accents from the 5-band analysis instead of aborting.
 - During extremely quiet or silent passages, the system still emits valid low-intensity DMX frames instead of failing or producing undefined values.
@@ -65,9 +65,9 @@ As a performer, I want the system to use the selected song's precomputed 5-band 
 - **FR-005**: System MUST accept the user's selection when the 'Enter' key is pressed.
 - **FR-005a**: System MUST accept an optional `--show-name` input for the output file, default to `main-show` when none is provided, and reject values that are not safe for a single filename segment. A safe show name matches `^[A-Za-z0-9_-]+$`.
 - **FR-005b**: System MUST resolve per-song artifacts by matching the selected MP3 basename exactly to the `<Song - Artist>` artifact directory name.
-- **FR-006**: System MUST process the selected song using an available 5-band FFT analysis.
+- **FR-006**: System MUST process the selected song using an FFT analysis input that can be resolved into the canonical 5-band render model.
 - **FR-006a**: System MUST require per-song beat and duration metadata for render timing and cue validation.
-- **FR-007**: System MUST use exactly 5 distinct energy bands to capture timbral complexity.
+- **FR-007**: System MUST use exactly 5 distinct canonical energy bands to capture timbral complexity, including deterministic normalization from the supported upstream FFT layout when needed.
 - **FR-008**: System MUST map the 5-band FFT energy onto a 2D virtual stage canvas.
 - **FR-009**: System MUST generate and save the resulting light show as a binary DMX file.
 - **FR-010**: System MUST interpret fixture positions from canonical rig inputs and apply app-specific virtual canvas metadata during rendering.
@@ -116,6 +116,7 @@ As a performer, I want the system to use the selected song's precomputed 5-band 
 - Some selectable songs may be missing required render artifacts; in that case the system still lists the song and reports the missing-input error only after selection.
 - Each selectable song's artifact directory matches the song filename exactly after removing the `.mp3` extension.
 - Stage rig configuration and named target points are available from existing configuration inputs.
-- The 5-band FFT ranges will follow standard audio engineering subdivisions (e.g., Sub-bass, Bass, Low-Mid, High-Mid, High) unless specified otherwise.
+- The canonical 5-band FFT ranges follow standard audio engineering subdivisions (e.g., Sub-bass, Bass, Low-Mid, High-Mid, High).
+- The upstream `fft_bands.json` input may contain either 5 canonical values or the supported 7-band upstream layout, which is deterministically folded into the canonical 5-band model before rendering.
 - The output DMX universe or channel mappings will rely on a predefined default schema if not explicitly customized.
 - All target MP3 files are decoded properly  without DRM restrictions.

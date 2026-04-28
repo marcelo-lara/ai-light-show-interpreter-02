@@ -71,7 +71,7 @@
 
 11. **[X] [P] [QA] Unit Tests for Q-Buffer and Shaders**
    - **Goal**: Validate the core musical-state and shader behaviors in isolation.
-   - **Instructions**: Add `tests/unit/test_q_buffer.py` and `tests/unit/test_shaders.py` covering configurable attack/release smoothing, section-label propagation, observable section-driven render differences, rejection of FFT frames that do not contain exactly 5 values, cue validation against duration from `beats.json`, valid `lighting_events.json` cue ingestion, rejection of out-of-order cue timestamps, full fallback when any cue record is malformed, transient fallback behavior, spatial warping inputs, and low-intensity output during silence. Run these checks in Docker.
+   - **Instructions**: Add `tests/unit/test_q_buffer.py` and `tests/unit/test_shaders.py` covering configurable attack/release smoothing, section-label propagation, observable section-driven render differences, deterministic normalization into exactly 5 canonical FFT values from the supported upstream layout, rejection of unsupported FFT frame shapes, cue validation against duration from `beats.json`, valid `lighting_events.json` cue ingestion, rejection of out-of-order cue timestamps, full fallback when any cue record is malformed, transient fallback behavior, spatial warping inputs, and low-intensity output during silence. Run these checks in Docker.
    - **Dependencies**: Task 5, Task 6, Task 8
    - **Files to create/modify**: `tests/unit/test_q_buffer.py`, `tests/unit/test_shaders.py`
 

@@ -2,7 +2,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 from src.engine._q_buffer import ArtifactValidationError, build_musical_state_stream, normalize_fft_levels
@@ -13,17 +12,31 @@ def _write_json(path: Path, content: dict) -> None:
     path.write_text(json.dumps(content), encoding="utf-8")
 
 
-def test_normalize_fft_levels_reduces_seven_bands_to_five() -> None:
-    values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
-    normalized = normalize_fft_levels(values)
+def _beats_payload(duration: float = 10.0) -> dict:
+    return {
+        "duration": duration,
+        "beats": [
+            {"time": 0.0, "bar": 1, "beat_in_bar": 1},
+            {"time": 0.5, "bar": 1, "beat_in_bar": 2},
+            {"time": 1.0, "bar": 1, "beat_in_bar": 3},
+        ],
+    }
 
-    assert normalized.shape == (5,)
-    assert list(normalized) == [0.1, 0.2, 0.3, 0.4, 0.5]
+
+def test_normalize_fft_levels_folds_upstream_seven_band_input_to_five() -> None:
+    normalized = normalize_fft_levels([0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0])
+
+    assert list(normalized) == pytest.approx([0.1, 0.2, 0.4, 0.8, 1.0])
 
 
 def test_rejects_fft_frames_with_too_few_bands() -> None:
     with pytest.raises(ArtifactValidationError):
         normalize_fft_levels([0.1, 0.2, 0.3])
+
+
+def test_rejects_fft_frames_with_unsupported_band_count() -> None:
+    with pytest.raises(ArtifactValidationError):
+        normalize_fft_levels([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
 
 
 def test_section_progress_and_label_propagation() -> None:
@@ -32,7 +45,7 @@ def test_section_progress_and_label_propagation() -> None:
         artifact_dir = root / "Cinderella - Ella Lee"
         _write_json(
             artifact_dir / "essentia" / "beats.json",
-            {"duration": 10.0, "beats": []},
+            _beats_payload(),
         )
         _write_json(
             artifact_dir / "essentia" / "fft_bands.json",
@@ -66,7 +79,7 @@ def test_invalid_lighting_events_are_ignored() -> None:
         artifact_dir = root / "Cinderella - Ella Lee"
         _write_json(
             artifact_dir / "essentia" / "beats.json",
-            {"duration": 10.0, "beats": []},
+            _beats_payload(),
         )
         _write_json(
             artifact_dir / "essentia" / "fft_bands.json",
@@ -83,9 +96,12 @@ def test_invalid_lighting_events_are_ignored() -> None:
         _write_json(
             artifact_dir / "lighting_events.json",
             {
+                "cue_anchors": [
+                    {"id": "anchor_1", "time_s": 5.0, "section_id": "ambient", "phrase_window_id": None},
+                ],
                 "lighting_events": [
-                    {"time_s": 5.0, "type": "accent", "strength": 1.0},
-                    {"time_s": 4.0, "type": "accent", "strength": 1.0},
+                    {"time_s": 5.0, "type": "accent", "strength": 1.0, "anchor_id": "anchor_1"},
+                    {"time_s": 4.0, "type": "accent", "strength": 1.0, "anchor_id": "anchor_1"},
                 ]
             },
         )
@@ -93,3 +109,74 @@ def test_invalid_lighting_events_are_ignored() -> None:
         states = build_musical_state_stream(artifact_dir)
         assert all(state["cue_trigger"] >= 0.0 for state in states)
         assert states[0]["cue_trigger"] == 0.5
+
+
+def test_valid_lighting_events_are_ingested_from_anchor_refs() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        artifact_dir = root / "Cinderella - Ella Lee"
+        _write_json(
+            artifact_dir / "essentia" / "beats.json",
+            _beats_payload(),
+        )
+        _write_json(
+            artifact_dir / "essentia" / "fft_bands.json",
+            {
+                "frames": [
+                    {"time": 0.0, "levels": [0.1, 0.2, 0.3, 0.4, 0.5], "transient_strength": 0.1},
+                    {"time": 0.5, "levels": [0.2, 0.2, 0.2, 0.2, 0.2], "transient_strength": 0.0},
+                ]
+            },
+        )
+        _write_json(
+            artifact_dir / "section_segmentation" / "sections.json",
+            {"sections": [{"start": 0.0, "end": 10.0, "label": "ambient"}]},
+        )
+        _write_json(
+            artifact_dir / "lighting_events.json",
+            {
+                "cue_anchors": [
+                    {"id": "anchor_1", "time_s": 0.0, "section_id": "ambient", "phrase_window_id": "phrase-1"},
+                ],
+                "lighting_events": [
+                    {
+                        "time": 0.0,
+                        "event_type": "accent",
+                        "intensity": 0.8,
+                        "anchor_refs": {
+                            "section_id": "ambient",
+                            "phrase_window_id": "phrase-1",
+                            "cue_anchor_ids": ["anchor_1"],
+                        },
+                    }
+                ],
+            },
+        )
+
+        states = build_musical_state_stream(artifact_dir)
+        assert states[0]["cue_trigger"] == pytest.approx(0.8)
+
+
+def test_missing_duration_or_beats_is_rejected() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        artifact_dir = root / "Cinderella - Ella Lee"
+        _write_json(
+            artifact_dir / "essentia" / "beats.json",
+            {"tempo": 120.0, "beats": []},
+        )
+        _write_json(
+            artifact_dir / "essentia" / "fft_bands.json",
+            {
+                "frames": [
+                    {"time": 0.0, "levels": [0.1, 0.1, 0.1, 0.1, 0.1], "transient_strength": 0.0},
+                ]
+            },
+        )
+        _write_json(
+            artifact_dir / "section_segmentation" / "sections.json",
+            {"sections": [{"start": 0.0, "end": 10.0, "label": "ambient"}]},
+        )
+
+        with pytest.raises(ArtifactValidationError, match="duration"):
+            build_musical_state_stream(artifact_dir)

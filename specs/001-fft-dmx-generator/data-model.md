@@ -8,12 +8,13 @@
 - Sequence of frame records follows a fixed binary header and dictates the `.dmx` file length.
 
 ## 2. FFT Energy Input
-**Description**: The canonical per-song 5-band analysis input used to drive the musical state.
+**Description**: The per-song FFT analysis input used to drive the canonical 5-band musical state.
 **Source**:
 - `data/artifacts/<Song - Artist>/essentia/fft_bands.json`
 **Constraints**:
 - The file is read-only input produced by an upstream pipeline.
-- Each frame resolves to exactly 5 ordered energy values for the selected song.
+- Each frame must resolve to exactly 5 ordered canonical energy values for the selected song.
+- Supported upstream layouts are either 5 canonical values or the upstream 7-band layout folded deterministically to `[band0, band1, avg(band2, band3), avg(band4, band5), band6]`.
 - The `<Song - Artist>` directory name matches the selected MP3 basename with the `.mp3` extension removed.
 
 ## 3. Beat and Duration Metadata Input
@@ -34,6 +35,9 @@
 **Constraints**:
 - `duration` is the authoritative song duration for validating cue timestamps.
 - `beats[]` provides the shared timing grid used by render logic.
+- `duration` must be a positive numeric value.
+- `beats[]` must be non-empty and monotonically increasing by `time`.
+- Each beat record must contain numeric `time` plus positive integer `bar` and `beat_in_bar` fields.
 
 ## 4. Section Metadata Input
 **Description**: The canonical per-song section structure input used to vary rendering behavior across verses, choruses, drops, and other major song regions.
@@ -73,6 +77,8 @@
 **Constraints**:
 - The file is advisory, not required.
 - A minimally valid cue record contains `time`, `type`, and either `anchor_id` or a resolvable cue anchor reference.
+- Upstream cue records may express their event kind as `event_type` and their accent strength as `intensity`; these normalize to the runtime `type` and `strength` fields.
+- A resolvable cue anchor reference may be a direct `anchor_id`, a non-empty `anchor_refs.cue_anchor_ids[]` list whose ids exist in `cue_anchors`, or an `anchor_refs` block whose `section_id`/`phrase_window_id` matches at least one cue anchor.
 - Event cue data is only considered valid when it parses successfully and its cue timestamps are monotonically increasing within the selected song duration reported by `data/artifacts/<Song - Artist>/essentia/beats.json`.
 - If any cue record is malformed, the system ignores the event-cue file for that song and falls back to transient detection rather than attempting partial ingestion.
 - Invalid or missing event cue data must trigger fallback to transient detection from FFT energy rather than aborting the render.

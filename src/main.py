@@ -64,8 +64,7 @@ def run_curses_selector(stdscr: "curses._CursesWindow", songs: list[Path]) -> Pa
             if row >= height - 1:
                 break
             prefix = "▶" if index == selected_index else " "
-            status = " [MISSING ARTIFACT]" if missing_status[index] else ""
-            line = f"{prefix} {path.stem}{status}"
+            line = f"{prefix} {path.stem}"
             stdscr.addnstr(row, 0, line, width - 1)
 
         stdscr.refresh()

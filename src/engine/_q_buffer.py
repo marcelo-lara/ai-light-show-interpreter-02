@@ -32,10 +32,20 @@ def _load_json(path: Path) -> Any:
 def normalize_fft_levels(levels: list[float]) -> np.ndarray:
     if len(levels) == 5:
         return np.asarray(levels, dtype=float)
-    if len(levels) > 5:
-        return np.asarray(levels[:5], dtype=float)
+    if len(levels) == 7:
+        source = np.asarray(levels, dtype=float)
+        return np.asarray(
+            [
+                source[0],
+                source[1],
+                (source[2] + source[3]) * 0.5,
+                (source[4] + source[5]) * 0.5,
+                source[6],
+            ],
+            dtype=float,
+        )
     raise ArtifactValidationError(
-        f"FFT frame contains {len(levels)} bands; expected exactly 5 canonical values."
+        f"FFT frame contains {len(levels)} bands; expected 5 canonical values or 7 upstream values."
     )
 
 
@@ -46,15 +56,90 @@ def _find_section(sections: list[dict[str, Any]], time: float) -> dict[str, Any]
     return sections[-1] if sections else {"label": "unknown", "start": 0.0, "end": time or 1.0}
 
 
-def _validate_cues(cues: list[dict[str, Any]], duration: float) -> bool:
+def _validate_beats_metadata(beats: dict[str, Any]) -> float:
+    duration = beats.get("duration")
+    if not isinstance(duration, (int, float)) or duration <= 0:
+        raise ArtifactValidationError("beats.json must define a positive numeric duration.")
+
+    beat_grid = beats.get("beats")
+    if not isinstance(beat_grid, list) or not beat_grid:
+        raise ArtifactValidationError("beats.json must define a non-empty beats list.")
+
+    previous_time = -1.0
+    for beat in beat_grid:
+        if not isinstance(beat, dict):
+            raise ArtifactValidationError("Each beat entry must be an object.")
+
+        time = beat.get("time")
+        bar = beat.get("bar")
+        beat_in_bar = beat.get("beat_in_bar")
+        if not isinstance(time, (int, float)):
+            raise ArtifactValidationError("Each beat entry must include a numeric time.")
+        if time < 0 or time > duration or time < previous_time:
+            raise ArtifactValidationError("Beat times must be monotonically increasing within song duration.")
+        if not isinstance(bar, int) or bar < 1:
+            raise ArtifactValidationError("Each beat entry must include a positive integer bar number.")
+        if not isinstance(beat_in_bar, int) or beat_in_bar < 1:
+            raise ArtifactValidationError("Each beat entry must include a positive integer beat_in_bar value.")
+        previous_time = float(time)
+
+    return float(duration)
+
+
+def _event_time(item: dict[str, Any]) -> Any:
+    if item.get("time_s") is not None:
+        return item.get("time_s")
+    return item.get("time")
+
+
+def _anchor_matches(anchor: dict[str, Any], refs: dict[str, Any]) -> bool:
+    section_id = refs.get("section_id")
+    phrase_window_id = refs.get("phrase_window_id")
+
+    if section_id is not None and anchor.get("section_id") != section_id:
+        return False
+    if phrase_window_id is not None and anchor.get("phrase_window_id") != phrase_window_id:
+        return False
+
+    return section_id is not None or phrase_window_id is not None
+
+
+def _has_resolvable_anchor_reference(
+    item: dict[str, Any],
+    anchors_by_id: dict[str, dict[str, Any]],
+    anchors: list[dict[str, Any]],
+) -> bool:
+    anchor_id = item.get("anchor_id")
+    if isinstance(anchor_id, str) and anchor_id in anchors_by_id:
+        return True
+
+    anchor_refs = item.get("anchor_refs")
+    if not isinstance(anchor_refs, dict):
+        return False
+
+    cue_anchor_ids = anchor_refs.get("cue_anchor_ids")
+    if isinstance(cue_anchor_ids, list) and cue_anchor_ids:
+        return all(isinstance(anchor_ref, str) and anchor_ref in anchors_by_id for anchor_ref in cue_anchor_ids)
+
+    return any(_anchor_matches(anchor, anchor_refs) for anchor in anchors)
+
+
+def _validate_cues(
+    cues: list[dict[str, Any]],
+    duration: float,
+    anchors_by_id: dict[str, dict[str, Any]],
+    anchors: list[dict[str, Any]],
+) -> bool:
     last_time = -1.0
     for item in cues:
-        time = item.get("time_s") if item.get("time_s") is not None else item.get("time")
+        time = _event_time(item)
         if not isinstance(time, (int, float)):
             return False
         if time < 0 or time > duration or time < last_time:
             return False
-        if not item.get("type"):
+        if not item.get("type") and not item.get("event_type"):
+            return False
+        if not _has_resolvable_anchor_reference(item, anchors_by_id, anchors):
             return False
         last_time = float(time)
     return True
@@ -69,18 +154,27 @@ def _load_event_cues(song_artifact_dir: Path, duration: float) -> list[dict[str,
     if not isinstance(data, dict):
         return []
 
+    anchors = data.get("cue_anchors")
+    if not isinstance(anchors, list):
+        return []
+    anchors_by_id = {
+        anchor["id"]: anchor
+        for anchor in anchors
+        if isinstance(anchor, dict) and isinstance(anchor.get("id"), str)
+    }
+
     cues = data.get("lighting_events")
     if not isinstance(cues, list):
         return []
 
-    if not _validate_cues(cues, duration):
+    if not _validate_cues(cues, duration, anchors_by_id, anchors):
         return []
 
     return [
         {
-            "time": float(item.get("time_s", item.get("time", 0.0))),
-            "strength": float(item.get("strength", 1.0)) if item.get("strength") is not None else 1.0,
-            "type": item.get("type", "accent"),
+            "time": float(_event_time(item)),
+            "strength": float(item.get("strength", item.get("intensity", 1.0))),
+            "type": item.get("type", item.get("event_type", "accent")),
         }
         for item in cues
     ]
@@ -114,13 +208,19 @@ def build_musical_state_stream(
     fft = _load_json(fft_path)
     sections = _load_json(sections_path)
 
-    duration = float(beats.get("duration", beats.get("tempo", 0.0)))
+    if not isinstance(beats, dict):
+        raise ArtifactValidationError("beats.json must contain a JSON object.")
+    if not isinstance(fft, dict):
+        raise ArtifactValidationError("fft_bands.json must contain a JSON object.")
+    if not isinstance(sections, dict):
+        raise ArtifactValidationError("sections.json must contain a JSON object.")
+
+    duration = _validate_beats_metadata(beats)
     frames = fft.get("frames", [])
     section_list = sections.get("sections", [])
     cues = _load_event_cues(song_artifact_dir, duration)
 
     smoothed_bands = np.zeros(5, dtype=float)
-    previous_intensity = 0.0
     states: list[MusicalStateBuffer] = []
     cumulative_rotation = 0.0
 
@@ -153,7 +253,6 @@ def build_musical_state_stream(
             cue_trigger=cue_trigger,
         )
         states.append(state)
-        previous_intensity = intensity_hit
 
     if not states:
         raise ArtifactValidationError("No FFT frames found for song artifact.")

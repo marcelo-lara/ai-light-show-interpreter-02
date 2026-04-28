@@ -36,12 +36,26 @@ def test_evaluator_produces_states_for_all_canvas_fixtures() -> None:
         "cue_trigger": 0.0,
     }
     render_states = evaluator.evaluate_frame(state)
+    moving_head_pois = set(pois)
 
     assert len(render_states) == len(fixtures)
     for fixture_state in render_states:
         assert "fixture_id" in fixture_state
         assert 0 <= fixture_state["dimmer"] <= 255
         assert len(fixture_state["color_rgb"]) == 3
+        if fixture_state["target_poi"] is not None:
+            assert fixture_state["target_poi"] in moving_head_pois
+
+    moving_head_fixture_ids = {
+        fixture["source_fixture_id"]
+        for fixture in fixtures
+        if fixture["type"] == "moving_head"
+    }
+    for fixture_state in render_states:
+        if fixture_state["fixture_id"] in moving_head_fixture_ids:
+            assert fixture_state["target_poi"] in moving_head_pois
+        else:
+            assert fixture_state["target_poi"] is None
 
 
 def test_compile_dmx_show_returns_expected_path(tmp_path: Path) -> None:
