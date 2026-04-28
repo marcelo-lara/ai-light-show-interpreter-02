@@ -12,17 +12,23 @@
 **Task**: Find best practices for building an interactive file selector in a Python CLI.
 **Context**: The application entry point requires listing songs (`data/songs/*.mp3`), showing a `▶` indicator on the left, and navigating with Up/Down keys, selecting with Enter.
 
-* **Decision**: `curses` (built-in) or `prompt_toolkit`
-* **Rationale**: `curses` is built into the Python standard library, requiring no extra dependencies. However, for modern Python CLIs, a lightweight dependency like `inquirer` or `prompt_toolkit` provides a cleaner, more robust cross-platform API for a simple list selection. Given the Docker constraint, standard `curses` is extremely reliable on Linux. We'll use `curses` to keep dependencies strictly analytical (NumPy).
+* **Decision**: `curses`
+* **Rationale**: `curses` is built into the Python standard library, requiring no extra dependencies. Given the Docker constraint and Linux-only target, standard `curses` is reliable for a simple list selector while keeping the dependency surface narrow.
 * **Alternatives considered**: `questionary`, `rich`. (These are great but might be overkill for a single list selection).
 
 ## 3. Fixture/Canvas Data Structure
 **Task**: Find patterns for storing DMX fixture configuration on a 2D Stage Virtual Canvas.
 **Context**: We need a schema (`stage_virtual_canvas.json`) that treats fixtures as lights in a 2D space. Parcans are static washers, moving heads can point anywhere.
-* **Decision**: A JSON manifest storing an array of fixture objects containing: `id`, `type` (washer/moving_head), `dmx_start_channel`, `channel_count`, and `canvas_position` (x, y coordinates).
-* **Rationale**: Simple serialization that feeds directly into a NumPy coordinate array at startup.
+* **Decision**: Use a hybrid model where `data/fixtures/fixtures.json` and `data/fixtures/pois.json` remain canonical for fixture identity, channel ownership, and target points, while `stage_virtual_canvas.json` stores only app-specific sampling/grouping metadata and coordinate derivations.
+* **Rationale**: This avoids duplicating DMX ownership in two places while still providing a compact render-oriented canvas description that feeds directly into a NumPy coordinate array at startup.
 
-## 4. DMX Binary Format Construction
+## 4. Evaluator-to-DMX Contract
+**Task**: Define the handoff boundary between mathematical rendering and DMX channel packing.
+**Context**: The evaluator samples shader output on the virtual canvas, but the DMX writer must still map those results onto fixture-specific channel layouts for washers and moving heads.
+* **Decision**: The evaluator returns per-fixture render intents containing `fixture_id`, `dimmer`, `color_rgb`, and optional `target_poi`; the DMX writer converts that render state into actual DMX channels using canonical fixture metadata.
+* **Rationale**: This keeps mathematical rendering separate from fixture-template addressing, which is the cleanest boundary for testing and minimizes duplicated DMX logic.
+
+## 5. DMX Binary Format Construction
 **Task**: Find best practices for writing binary sequence files in Python.
 **Context**: The final output is a `.dmx` file containing sequential frames of 512-byte (universe) values.
 * **Decision**: Use Python's `struct` module or raw `bytes()` / `bytearray()`.
