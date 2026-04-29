@@ -153,3 +153,17 @@
 - Canonical fixture coordinates normalized to the 0..1 range are mapped onto the 10x5 virtual canvas by linear scaling: `canvas_x = normalized_x * 10.0`, `canvas_y = normalized_y * 5.0`.
 - Static washers (`washer`) only need a fixed sample `position` because their beam is treated as stationary in v1.
 - Moving heads (`moving_head`) target named POIs in v1 rather than performing dynamic brightest-region search.
+
+## 9. Canvas WebSocket Events
+**Description**: Bidirectional JSON stream connecting UI on port 3300 to backend on port 3301.
+**Event Shapes**: 
+
+- `ready`: (Backend->UI) Emitted when the `.dmx` backend rendering is fully completed. Unlocks the "play" button.
+- `play`: (UI->Backend) Dispatched when the user hits play in the UI, signalling the backend to stream out the pre-calculated or lazily evaluated visualization frames at 50 FPS.
+- `init`: (Backend->UI) Dispatched containing dimensions (`canvas.width` / `canvas.height`) and the `fixtures`.
+- `frame`: (Backend->UI) Dispatched at 50 FPS after playback starts. Carries the entire `q_buffer` global snapshot, actual `fixtures` intensities, and a down-sampled `canvas_mesh.pixels` matrix for rapid GPU painting using simple geometric indicators via HTML5 Canvas.
+- `end`: (Backend->UI) Dispatched exactly once when the render playback finishes gracefully.
+
+**Constraints**:
+- The event payloads must not write to the host filesystem.
+- `canvas_mesh.pixels` resolution should be kept low enough not to stall `frame` encode logic in python (e.g. 20x10 instead of 800x400).

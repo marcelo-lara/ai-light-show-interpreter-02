@@ -1,94 +1,105 @@
-# Tasks: Audio to DMX Generator
+# Tasks: Audio to DMX Generator & Canvas Output UI
 
 **Input**: Design documents from `/specs/001-fft-dmx-generator/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/evaluator.py
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/ui_websocket_contract.md
 
-## User Story 1 - Song Selection via CLI
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story. Since this specific plan incorporates the new user-requested Web UI, we have extended the tasks to include Phase 5 mapped to the Canvas User Story.
 
-1. **[X] [P] [US1] Create Docker Environment & Packaging**
-   - **Goal**: Set up `Dockerfile` and `docker-compose.yml` to ensure Python execution within an isolated container.
-   - **Instructions**: Create `Dockerfile`, `docker-compose.yml`, and `requirements.txt` for a `light-show-cli` service that installs runtime/test dependencies, points to `src/main.py`, enables interactive TTY/stdin for the `curses` selector, mounts `data/` as a read-only volume, and mounts `data/shows/` as writable.
-   - **Dependencies**: None
-   - **Files to create/modify**: `Dockerfile`, `docker-compose.yml`, `requirements.txt` 
+## Phase 1: Setup (Shared Infrastructure)
 
-2. **[X] [P] [US1] Stage Virtual Canvas Config**
-   - **Goal**: Create the app-specific virtual canvas metadata layered on top of the rig inputs.
-   - **Instructions**: Create `src/config/stage_virtual_canvas.json` representing washers and moving heads on a 10x5m grid, derived from canonical fixture geometry in `data/fixtures/fixtures.json` and target POIs in `data/fixtures/pois.json` according to the Data Model. Map normalized canonical fixture coordinates onto the 10x5 canvas by linear scaling.
-   - **Dependencies**: None
-   - **Files to create/modify**: `src/config/stage_virtual_canvas.json`
+**Purpose**: Project initialization and basic structure for both backend and frontend.
 
-3. **[X] [ ] [US1] Curse-Based CLI Menu**
-   - **Goal**: Create `src/main.py` entrypoint.
-   - **Instructions**: Use Python `curses` to list files in `data/songs/*.mp3` matching requirement (no extension, `▶` indicator), accept an optional `--show-name` argument, reject values that do not match `^[A-Za-z0-9_-]+$`, and return the selected song path plus the resolved output show name.
-   - **Dependencies**: Task 1
-   - **Files to create/modify**: `src/main.py`
+- [ ] T001 Create project structure for the `ui/` directory per the implementation plan.
+- [ ] T002 Initialize the React project with Vite (`npm create vite@latest ui -- --template react-ts`).
+- [ ] T003 Update `docker-compose.yml` to include the new `ui` service mapping to the Vite dev server/nginx.
 
-4. **[X] [ ] [US1] CLI Empty-State and Interrupt Handling**
-   - **Goal**: Cover the non-happy-path entrypoint behaviors required by the spec.
-   - **Instructions**: Update the CLI flow to show a clear message and exit non-zero when `data/songs/` is empty or missing, and to exit cleanly when the user interrupts before rendering begins.
-   - **Dependencies**: Task 3
-   - **Files to create/modify**: `src/main.py`
+---
 
-## User Story 2 - Audio Processing to DMX Generation
+## Phase 2: Foundational (Blocking Prerequisites)
 
-5. **[X] [P] [US2] Section and Musical State Inputs**
-   - **Goal**: Build the input layer for smoothing audio and section-aware rendering.
-   - **Instructions**: Create `src/engine/_q_buffer.py`. Implement code that parses `data/artifacts/<Song - Artist>/essentia/beats.json`, `data/artifacts/<Song - Artist>/section_segmentation/sections.json`, and `data/artifacts/<Song - Artist>/essentia/fft_bands.json` frame by frame, applies configurable attack/release smoothing, and outputs section-aware musical state data including `MusicalStateBuffer` (`time`, `bands`, `intensity_hit`, `cumulative_rotation`, `mid_warp`, `section_label`, `section_progress`, `cue_trigger`).
-   - **Dependencies**: None
-   - **Files to create/modify**: `src/engine/_q_buffer.py`
+**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented.
 
-6. **[X] [ ] [US2] Event Cue Fallback Contract**
-   - **Goal**: Define how optional event cue input affects rendering without becoming a required dependency.
-   - **Instructions**: Implement event cue ingestion so `lighting_events.json` is consumed only when it parses successfully, all cue records are minimally valid, and cue timestamps are monotonically increasing within the selected song duration; otherwise ignore the event file for that song and populate `cue_trigger` via transient detection from FFT energy.
-   - **Dependencies**: Task 5
-   - **Files to create/modify**: `src/engine/_q_buffer.py`
+- [ ] T004 Define `src/io/websocket_emitter.py` to handle the `asyncio` WebSocket server (`FastAPI` or `websockets`).
+- [ ] T005 [P] Create React `useEngineSocket.ts` hook in `ui/src/hooks/useEngineSocket.ts` to consume the WebSocket connection.
+- [ ] T006 [P] Add base canonical models for the 5-band evaluation and the DMX output in the Python engine.
+- [ ] T007 Initialize HTML5 Canvas API context helpers in `ui/src/components/EngineCanvas.tsx`.
 
-7. **[X] [ ] [US2] Evaluator Interface/Mesh**
-   - **Goal**: Implement physical mappings and evaluate logic.
-   - **Instructions**: Create `src/engine/evaluator.py`. Combine the derived `stage_virtual_canvas.json` metadata with rig and POI inputs, map the resulting fixture coordinates to NumPy (N, 2), apply section-aware routing and spatial warping hooks, and assemble one per-fixture render state from the shader outputs using canonical fixture ids from `source_fixture_id`.
-   - **Dependencies**: Task 2, Task 5, Task 6, Task 8
-   - **Files to create/modify**: `src/engine/evaluator.py`
+---
 
-8. **[X] [P] [US2] Procedural Shaders**
-   - **Goal**: Write functional logic for radial and linear pattern evaluations mapping to the (N,2) canvas points.
-   - **Instructions**: Implement `src/engine/shaders/radial_pulse.py` and `src/engine/shaders/linear_wave.py` passing NumPy parameters. Implement Additive/Multiplicative Blending via `src/engine/shaders/blending.py`, including low-intensity behavior during quiet or silent passages, so Task 7 can assemble final render states from these shader outputs.
-   - **Dependencies**: Task 5
-   - **Files to create/modify**: `src/engine/shaders/radial_pulse.py`, `src/engine/shaders/linear_wave.py`, `src/engine/shaders/blending.py`
+## Phase 3: User Story 1 - Song Selection via CLI (Priority: P1) 🎯 MVP
 
-9. **[X] [P] [US2] DMX Writer**
-   - **Goal**: Pack mathematical intensities back into binary. 
-   - **Instructions**: Create `src/io/dmx_writer.py`. Map evaluator render states onto actual fixture channels using canonical fixture/template metadata, pack the DMX header and timestamped frame records with `struct`, and ensure interrupted or failed renders do not leave partial output files behind.
-   - **Dependencies**: Task 7, Task 8
-   - **Files to create/modify**: `src/io/dmx_writer.py`
+**Goal**: As a user, I want to launch the application and see a list of my songs so that I can easily select which song to process for my light show.
 
-10. **[X] [ ] [US2] Show Compiler (Orchestrator)**
-   - **Goal**: Stitch CLI parsing into the Engine, feeding it through the IO stream 50 times per second.
-   - **Instructions**: Create `src/io/show_compiler.py`. Orchestrate `main.py` selection, artifact validation including exact MP3-basename to artifact-directory matching, required beat/section/FFT input loading, optional event cue loading, frame iteration of `evaluator`, dumping output via `dmx_writer.py` using the default show name `main-show` unless an explicit show name is provided, and clean interruption handling during rendering.
-   - **Dependencies**: Task 4, Task 7, Task 9
-   - **Files to create/modify**: `src/io/show_compiler.py`, `src/main.py` (wiring)
+**Independent Test**: Can be fully tested by launching the CLI, observing the list of mp3 files from `data/songs/`, navigating with arrow keys, and pressing enter to confirm a selection.
 
-## QA & Testing
+### Implementation for User Story 1
 
-11. **[X] [P] [QA] Unit Tests for Q-Buffer and Shaders**
-   - **Goal**: Validate the core musical-state and shader behaviors in isolation.
-   - **Instructions**: Add `tests/unit/test_q_buffer.py` and `tests/unit/test_shaders.py` covering configurable attack/release smoothing, section-label propagation, observable section-driven render differences, deterministic normalization into exactly 5 canonical FFT values from the supported upstream layout, rejection of unsupported FFT frame shapes, cue validation against duration from `beats.json`, valid `lighting_events.json` cue ingestion, rejection of out-of-order cue timestamps, full fallback when any cue record is malformed, transient fallback behavior, spatial warping inputs, and low-intensity output during silence. Run these checks in Docker.
-   - **Dependencies**: Task 5, Task 6, Task 8
-   - **Files to create/modify**: `tests/unit/test_q_buffer.py`, `tests/unit/test_shaders.py`
+- [ ] T008 [P] [US1] Create a curses-based CLI menu in `src/io/cli_menu.py` that lists files from `data/songs/*.mp3`.
+- [ ] T009 [US1] Implement '▶' cursor and up/down arrow key navigation logic in `src/io/cli_menu.py`.
+- [ ] T010 [US1] Filter out `.mp3` extensions from menu display names.
+- [ ] T011 [US1] Accept an optional `--show-name` argument in the CLI entrypoint (`src/main.py`) defaulting to `main-show` with regex validation `^[A-Za-z0-9_-]+$`.
 
-12. **[X] [P] [QA] CLI and Error-Handling Tests**
-   - **Goal**: Validate non-happy-path entrypoint behavior.
-   - **Instructions**: Add `tests/unit/test_cli_menu.py` and `tests/integration/test_error_handling.py` covering `.mp3` extension stripping, rendering and movement of the literal `▶` selector indicator, arrow-key navigation with Enter selection, listing songs even when their render artifacts are missing, empty or missing song directories, exact artifact-directory matching from the selected MP3 basename, missing or malformed beat/duration metadata, invalid analysis inputs, invalid `--show-name` rejection against `^[A-Za-z0-9_-]+$`, and clean interruption semantics. Run these checks in Docker.
-   - **Dependencies**: Task 4, Task 10
-   - **Files to create/modify**: `tests/unit/test_cli_menu.py`, `tests/integration/test_error_handling.py`
+---
 
-13. **[X] [ ] [QA] Integration and Output Contract Testing**
-   - **Goal**: Create automated pipeline validation for the baseline song and DMX output contract.
-   - **Instructions**: Add `tests/integration/test_canvas_evaluation.py` and `tests/integration/test_output_contract.py` to assert output generation, exact `{song_name}.{show_name}.dmx` filename behavior with both the `main-show` default and a user-supplied `--show-name`, DMX header and frame-record structure, deterministic identical output bytes across repeated runs with the same inputs, render states keyed by canonical fixture ids, DMX-bound numeric channel intent values, distinct washer versus moving-head behavior including direct POI pan/tilt lookup from `pois.json`, CLI startup from process launch to first rendered menu within 1 second, and baseline render duration from song confirmation to completed DMX write within 60 seconds. Run these checks in Docker.
-   - **Dependencies**: Task 10
-   - **Files to create/modify**: `tests/integration/test_canvas_evaluation.py`, `tests/integration/test_output_contract.py`
+## Phase 4: User Story 2 - Audio Processing to DMX Generation (Priority: P1)
 
-14. **[X] [ ] [QA] Docker Smoke Test**
-   - **Goal**: Validate the completed feature in the required Docker-first environment.
-   - **Instructions**: Rebuild the Docker image, run the CLI end to end inside Docker, and verify the baseline song render succeeds without violating the read-only data rules.
-   - **Dependencies**: Task 13
-   - **Files to create/modify**: `Dockerfile`, `docker-compose.yml`
+**Goal**: As a performer, I want the system to process the 5-band FFT and output a binary DMX file synchronized to the song's timbral complexity.
+
+**Independent Test**: Select a valid song, evaluate the frame buffers, and confirm a binary DMX output file is created matching `data/shows/{song_name}.{show_name}.dmx`.
+
+### Implementation for User Story 2
+
+- [ ] T012 [P] [US2] Implement `q_buffer.py` to maintain global musical state, reading `fft_bands.json` and section metadata.
+- [ ] T013 [P] [US2] Implement `evaluator.py` using NumPy to map 5-band FFT energy onto the 2D stage canvas and fixtures.
+- [ ] T014 [US2] Implement procedural shaders (`RadialPulse`, `LinearWave`) in `src/engine/shaders/`.
+- [ ] T015 [US2] Implement layer blending and spatial coordinate distortion based on `q_buffer` state.
+- [ ] T016 [US2] Implement binary DMX frame construction in `src/io/dmx_writer.py` mapping evaluated values to 512-byte universes.
+- [ ] T017 [US2] Ensure fallback logic to transient detection from the 5-band analysis when optional `lighting_events.json` is missing or invalid.
+- [ ] T018 [US2] Save output file cleanly to `data/shows/{song_name}.{show_name}.dmx`, handling safe interruption (Ctrl+C).
+
+---
+
+## Phase 5: User Story 3 - Canvas Output Inspection UI (Priority: P2)
+
+**Goal**: I want an inspection UI (like BeatDrop-Music-Visualizer) to see the exact 2D math output of the shaders engine over a WebSocket, decoupled from the DMX writer.
+
+**Independent Test**: Open `http://localhost:8080`, select a song in the engine CLI, and observe the waveform, math parameters, and updating HTML5 canvas.
+
+### Implementation for User Story 3
+
+- [ ] T019 [P] [US3] Scaffold `ui/nginx.conf` and update docker-compose.yml to expose port 3300 for the frontend and 3301 for the Python Engine WebSocket, statically mounting `/data/songs/` into Nginx for audio streaming.
+- [ ] T020 [US3] Update `src/main.py` main loop to bake the entire `.dmx` at maximum speed, then emit a `ready` event locally via `websocket_emitter.py`.
+- [ ] T021 [US3] Implement logic in `websocket_emitter.py` to listen for a `play` intent from the frontend, then stream cached or re-evaluated `init` and `frame` payloads at 1x real-time speed (50 FPS).
+- [ ] T022 [P] [US3] Scaffold the React Main Layout in `ui/src/App.tsx`.
+- [ ] T023 [P] [US3] Implement `ui/src/components/WaveformView.tsx` utilizing `wavesurfer.js` to render the song timeline via static file fetch, enabling the play button only when `ready` is received.
+- [ ] T024 [P] [US3] Implement `ui/src/components/MathParamsPanel.tsx` to reactively display `q_buffer` parameters from WebSocket state.
+- [ ] T025 [P] [US3] Implement `ui/src/components/EngineCanvas.tsx`, using standard HTML5 Canvas 2D context to render the `canvas_mesh.pixels` block rapidly via GPU.
+- [ ] T026 [US3] Render discrete fixture indicators as Simple Colored Geometry on top of the `EngineCanvas.tsx` mesh tracking real-time coordinated intensity.
+- [ ] T027 [US3] Handle the `end` event cleanly in the React Frontend, resetting or stopping the playback loop.
+
+
+---
+
+## Phase 6: Polish & Cross-Cutting Concerns
+
+**Purpose**: Improvements that affect multiple user stories.
+
+- [ ] T028 [P] Documentation updates in `docs/` reflecting the new UI service port and WebSocket dependencies.
+- [ ] T029 Clean up unused imports and standardize logging across `src/io/`.
+- [ ] T030 Ensure the `data/` read-only constitution is completely preserved (engine emits to UI exclusively via network).
+- [ ] T031 Run standard test suite to ensure the WebSocket addition does not bottleneck the existing DMX generation thread.
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+- **Setup (Phase 1)**: No dependencies.
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories.
+- **User Stories (Phase 3, 4, 5)**: All depend on Foundational phase completion.
+  - Phase 3 (CLI) and Phase 4 (Engine) can be done in parallel.
+  - Phase 5 (UI) requires Phase 4 Engine math/evaluator work as a precursor or concurrent dependency.
+
+### Parallel Opportunities
+- React Component scaffolding (T022-T025) can be done concurrently with the Python `evaluator.py` (T013) implementation.
+- WebSocket Emitter (T004) and Consumer Hook (T005) are entirely decoupled and parallelizable.

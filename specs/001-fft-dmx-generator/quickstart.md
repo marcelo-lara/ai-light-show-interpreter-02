@@ -1,32 +1,34 @@
-# Quickstart: Audio to DMX Generator
+# Quickstart: Canvas Output UI
 
-## Prerequisites
-- Docker & Docker Compose
-- Run the CLI from an interactive terminal because the selector uses `curses`.
-- Ensure input directory `data/songs/` has `.mp3` files.
-- Ensure per-song beat and duration metadata is already generated at `data/artifacts/<Song - Artist>/essentia/beats.json`.
-- Ensure per-song section metadata is already generated at `data/artifacts/<Song - Artist>/section_segmentation/sections.json`.
-- Ensure per-song FFT analysis artifacts are already generated at `data/artifacts/<Song - Artist>/essentia/fft_bands.json`; the renderer normalizes supported upstream layouts into its canonical 5-band model.
-- Ensure rig inputs exist at `data/fixtures/fixtures.json` and `data/fixtures/pois.json`.
+## Overview
+This feature introduces a live WebSocket-driven Web UI that renders a live 2D representation of the lighting engine's math variables and visual outputs concurrently. 
 
-## Execution
+## 1. Prerequisites
+1. **Docker Compose**: You must have `docker-compose` installed.
+2. **Audio Track**: MP3 files required in `data/songs/` mapped to the corresponding analysis data in `data/artifacts/`.
 
-1. Build the Docker environment:
-   ```bash
-   docker compose build
-   ```
-2. Start the interactive CLI:
-   ```bash
-   docker compose run --rm light-show-cli
-   ```
-   To override the default output name, pass `--show-name your-show-name`.
-3. Use Arrow Keys to navigate the playlist of `.mp3` tracks (Select `Cinderella - Ella Lee` for baseline testing).
-4. Press `Enter` to select a track.
-5. The `Evaluator` will combine fixture and POI inputs with `stage_virtual_canvas.json` metadata, process section metadata and the canonical 5-band FFT `q_buffer`, optionally ingest `lighting_events.json`, emit per-fixture render states, and the DMX writer will bake those states into a binary 50FPS `.dmx` sequence at `data/shows/{song_name}.{show_name}.dmx`.
+## 2. Docker Deployment
 
-## Verification
-
-Check the output directory for your compiled show:
+Launch both the python engine service and the static UI server.
 ```bash
-ls -la data/shows/*.dmx
+docker compose up -d --build
 ```
+> *Note:* The `docker-compose.yml` has been updated to include the `ui` service.
+
+## 3. Accessing the Interface
+
+1. Start processing your show using the CLI in the engine container.
+   ```bash
+   docker compose run --rm engine python src/main.py
+   ```
+2. Once the song begins rendering (or after you've selected a song via CLI), open your browser:
+   ```text
+   http://localhost:8080
+   ```
+*(Port depends on final bind defined in `docker-compose.yml`)*
+
+## 4. UI Interactions
+- **Header (Left)**: View the current song name originating from `/data/songs`.
+- **Waveform (Hero)**: Scrub through the audio and sync the timeline positioning using `waveform.js` (or modern equivalent `wavesurfer.js`).
+- **Math View (Left Column)**: Lists realtime global musical state values (`q_buffer`).
+- **Canvas Display (Right Column)**: 2D representation of the grid and generated fixture intensities.

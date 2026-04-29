@@ -34,3 +34,12 @@
 * **Decision**: Use Python's `struct` module or raw `bytes()` / `bytearray()`.
 * **Rationale**: A DMX universe frame is just an array of 512 bytes (values 0-255). Writing a pure continuous byte stream matching 50 frames per second is highly efficient.
 
+
+## 6. Web UI for Canvas Output Visualization
+**Task**: Research the best choices for building a simple web UI for viewing a Python shader engine canvas and parameters over WebSockets.
+**Context**: An inspection UI similar to BeatDrop-Music-Visualizer, intended to see the exact output of the shaders engine (not a standalone realtime visualizer). Needs `wavesurfer.js` integration, player controls, math parameter display, and 2D canvas visualization (leveraging client GPU) in an independent `/ui` folder deployed via Docker compose.
+
+* **Decision**: React (via Vite) frontend using HTML5 `<canvas>` API for GPU-accelerated drawing, Python asyncio WebSocket backend. Docker Compose service for `/ui`.
+* **Rationale**: React manages complex reactive states (like changing waveform timelines and rapidly updating UI strings for math params) very elegantly. Using native HTML5 `<canvas>` drawn within a React Ref component offloads the raw pixel rendering of the python shader evaluator's mathematical output to the client's GPU, maintaining high performance at 50fps. This perfectly matches the requested "inspection tool" paradigm.
+* **Alternatives considered**: Vanilla JS/HTML (lack of clean reactive binding for parameters), Server-Side rendering (unsuitable for 50fps GPU canvas visualization).
+

@@ -43,8 +43,27 @@ As a performer, I want the system to use the selected song's precomputed 5-band 
 7. **Given** the user does not provide a show name, **When** the application writes the output, **Then** it uses `main-show` as the show name segment of the filename.
 8. **Given** the user provides a show name, **When** the application writes the output, **Then** it uses that show name in the `{song_name}.{show_name}.dmx` filename.
 
+### User Story 3 - Canvas Output Inspection UI (Priority: P2)
+
+As a developer or designer, I want an inspection UI running in a browser so that I can see the exact 2D math output of the shaders engine decoupled from the final DMX writer.
+
+**Why this priority**: While the DMX file is the primary artifact, this UI provides massive value for verifying shader logic visually.
+
+**Independent Test**: Can be fully tested by launching the dockerized setup, navigating to the specific port on `localhost`, selecting a song in the engine CLI, and observing the waveform, math parameters, and reactive 2D canvas running at 50fps.
+
+**Acceptance Scenarios**:
+
+1. **Given** the python backend engine is running, **When** it begins processing a song, **Then** it bakes the DMX file at maximum speed without UI throttling.
+2. **Given** the DMX generation finishes, **When** the backend is ready, **Then** it emits a `ready` event over a WebSocket on port 3301.
+3. **Given** the frontend UI container is running, **When** I navigate to port 3300 in a browser, **Then** I see the React frontend load with the song waveform loaded via static HTTP mount.
+4. **Given** the frontend receives the `ready` event, **When** I select "Play", **Then** the UI starts the audio playback and sends a `play` intent to the backend to begin streaming frames at 50fps in sync.
+5. **Given** the frontend is connected to the backend, **When** the backend emits a frame, **Then** the canvas draws the updated intensities (represented as simple colored geometry corresponding to fixtures) relying on the client's GPU via the HTML5 Canvas API.
+6. **Given** the engine stops or finishes streaming the song, **When** the end frame is emitted, **Then** the UI pauses the waveform playback and stops drawing new frames.
+
 ### Edge Cases
 
+- If the WebSocket server fails to bind port 3301, the system logs an error but continues writing the DMX file (the Canvas UI is optional).
+- If the browser client disconnects during rendering, the engine continues unhindered; it does not block waiting for the client.
 - If the song directory is empty or missing, the system shows a clear message and exits without starting processing.
 - If the selected song or its required analysis inputs are unreadable or invalid, the system aborts with a clear error and does not write a partial show file.
 - If any FFT frame cannot be resolved into exactly 5 canonical energy values from a supported upstream layout, the system aborts with a clear error and does not attempt rendering.
@@ -84,6 +103,9 @@ As a performer, I want the system to use the selected song's precomputed 5-band 
 - **FR-020**: System MUST accept optional validated event cue input from the per-song event layer for discrete visual accents when that cue input is available.
 - **FR-021**: System MUST fall back to transient detection from the 5-band analysis when optional event cue input is missing or invalid.
 - **FR-022**: System MUST write the output file using the `{song_name}.{show_name}.dmx` naming convention.
+- **FR-023**: System MUST provide an optional backend WebSocket server on internal port 3301 designed to broadcast `q_buffer`, `fixtures`, and `canvas_mesh` snapshots at 50 FPS for debugging purposes.
+- **FR-024**: System MUST serve an independent static frontend client (Vite/React) on exposed port 3300.
+- **FR-025**: System MUST render the 2D stage canvas asynchronously via the client browser HTML5 Canvas GPU acceleration, not within Python image logic.
 
 ### Key Entities
 
@@ -98,6 +120,7 @@ As a performer, I want the system to use the selected song's precomputed 5-band 
 - **Beat and Duration Metadata**: Per-song timing metadata used as the authoritative duration source for validating cue timestamps.
 - **Event Cue Input**: An optional per-song event stream that can trigger discrete visual accents when it passes validation.
 - **DMX Frame**: A binary representation of the channel values for the light fixtures at a given point in time.
+- **Canvas Inspection UI**: An asynchronous network client displaying the mathematical representation of the stage (via port 3300 UI connecting to port 3301 WebSocket).
 
 ## Success Criteria *(mandatory)*
 
@@ -109,10 +132,14 @@ As a performer, I want the system to use the selected song's precomputed 5-band 
 - **SC-004**: In the default Docker environment, the user can move the selector with the up and down arrow keys and confirm a song with Enter without navigation errors.
 - **SC-005**: For the same selected song, artifact inputs, and show name, repeated runs produce identical DMX output bytes.
 - **SC-006**: For any rendered frame, evaluator output maps to canonical fixture ids, numeric channel-intent values stay within DMX bounds, and moving-head targets resolve only to configured POI ids.
+- **SC-007**: The optional Python WebSocket emitter loop MUST execute rapidly without bottlenecking the main bake loop, introducing less than a 2ms penalty per 50 FPS cycle.
+- **SC-008**: The Canvas Output UI correctly syncs to the visual playback timeline and reflects new shader matrices via the `window.requestAnimationFrame()` cycle.
 
 ## Assumptions
 
 - The application runs in an interactive terminal environment that can display a navigable song-selection interface.
+- React and HTML5 Canvas API are reliable implementations for the UI.
+- The client machine possesses a basic GPU/hardware accelerator sufficient to render 2D mesh updates at 50 fps natively.
 - Some selectable songs may be missing required render artifacts; in that case the system still lists the song and reports the missing-input error only after selection.
 - Each selectable song's artifact directory matches the song filename exactly after removing the `.mp3` extension.
 - Stage rig configuration and named target points are available from existing configuration inputs.
