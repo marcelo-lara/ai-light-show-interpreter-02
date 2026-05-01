@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import curses
 import re
+import sys
 from pathlib import Path
 from typing import Iterable
 
@@ -150,6 +151,37 @@ def main() -> int:
         print("No songs found in data/songs/. Please add .mp3 files to the directory.")
         return 1
 
+    if args.ui_playback:
+        websocket_server = EngineWebSocketServer(evaluator=None, song_name="")
+
+        def compile_selected_song(song_value: str) -> None:
+            selected_path = resolve_song_choice(song_value, songs)
+            websocket_server.set_song_name(selected_path.stem)
+            output_path = compile_dmx_show(selected_path, show_name, websocket_server=websocket_server)
+            websocket_server.notify_ready()
+            print(f"Show written to: {output_path}", flush=True)
+
+        websocket_server.set_song_selection_handler(compile_selected_song)
+        websocket_server.start()
+        print("Waiting for a UI client to select a song on ws://0.0.0.0:3301/ws/canvas")
+
+        if args.song:
+            try:
+                compile_selected_song(args.song)
+            except ValueError as exc:
+                print(f"Error: {exc}", file=sys.stderr)
+                websocket_server.notify_error(str(exc))
+            except Exception as exc:
+                print(f"Failed to compile show: {exc}", file=sys.stderr)
+                websocket_server.notify_error(str(exc))
+
+        try:
+            websocket_server.wait_forever()
+            return 0
+        except KeyboardInterrupt:
+            print("Interrupted before rendering began.")
+            return 1
+
     try:
         if args.song:
             selected_path = resolve_song_choice(args.song, songs)
@@ -168,7 +200,10 @@ def main() -> int:
         websocket_server.start()
 
     try:
-        output_path = compile_dmx_show(selected_path, show_name, websocket_server=websocket_server)
+        if websocket_server is None:
+            output_path = compile_dmx_show(selected_path, show_name)
+        else:
+            output_path = compile_dmx_show(selected_path, show_name, websocket_server=websocket_server)
         if websocket_server is not None:
             websocket_server.notify_ready()
         print(f"Show written to: {output_path}")

@@ -65,17 +65,35 @@ The final output is a show file following the **DMX Binary Specification** (e.g.
 docker compose build
 ```
 
-2. Run the interactive song selector and render a show:
+2. Start the default browser-driven UI stack:
+
+```bash
+docker compose up -d --build
+```
+
+3. Open the Canvas Output UI:
+
+```text
+http://localhost:3300
+```
+
+4. Pick a song from the header dropdown. The UI sends a `select_song` message over the WebSocket on port `3301`, the backend bakes the `.dmx` file, and the Play button becomes available when the bake completes.
+
+5. If you want the original terminal selector instead of the browser flow, run the CLI directly:
 
 ```bash
 docker compose run --rm light-show-cli --show-name main-show
 ```
 
-3. The selector will mark songs that are missing analyzer artifacts with ` [MISSING ARTIFACT]`.
+The selector will mark songs that are missing analyzer artifacts with ` [MISSING ARTIFACT]`.
 
-4. If you need to render non-interactively, you can still pass the same `--show-name` flag and the tool will write the compiled DMX to `data/shows/`.
+6. If you need to render non-interactively, you can still pass `--song` and `--show-name` and the tool will write the compiled DMX to `data/shows/`.
 
-5. To export a debug SVG of the current fixture and POI layout without opening the player:
+```bash
+docker compose run --rm light-show-cli --song "Cinderella - Ella Lee" --show-name main-show
+```
+
+7. To export a debug SVG of the current fixture and POI layout without opening the player:
 
 ```bash
 docker compose run --rm light-show-cli --export-layout
@@ -83,7 +101,7 @@ docker compose run --rm light-show-cli --export-layout
 
 The SVG includes moving-head beam lines pointing to each fixture's current default `target_poi`.
 
-6. Verify the output file exists:
+8. Verify the output file exists:
 
 ```bash
 ls -lh data/shows/*.dmx

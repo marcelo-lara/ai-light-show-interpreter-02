@@ -63,13 +63,13 @@
 
 **Goal**: I want an inspection UI (like BeatDrop-Music-Visualizer) to see the exact 2D math output of the shaders engine over a WebSocket, decoupled from the DMX writer.
 
-**Independent Test**: Open `http://localhost:8080`, select a song in the engine CLI, and observe the waveform, math parameters, and updating HTML5 canvas.
+**Independent Test**: Open `http://localhost:3300`, select a song in the UI dropdown, and observe the waveform, math parameters, and updating HTML5 canvas.
 
 ### Implementation for User Story 3
 
 - [ ] T019 [P] [US3] Scaffold `ui/nginx.conf` and update docker-compose.yml to expose port 3300 for the frontend and 3301 for the Python Engine WebSocket, statically mounting `/data/songs/` into Nginx for audio streaming.
-- [ ] T020 [US3] Update `src/main.py` main loop to bake the entire `.dmx` at maximum speed, then emit a `ready` event locally via `websocket_emitter.py`.
-- [ ] T021 [US3] Implement logic in `websocket_emitter.py` to listen for a `play` intent from the frontend, then stream cached or re-evaluated `init` and `frame` payloads at 1x real-time speed (50 FPS).
+- [ ] T020 [US3] Update `src/main.py` main loop to keep the backend alive in UI playback mode, accept song selection from the browser, bake the entire `.dmx` at maximum speed, then emit `ready` locally via `websocket_emitter.py`.
+- [ ] T021 [US3] Implement logic in `websocket_emitter.py` to listen for `select_song` and `play` intents from the frontend, rebake and republish state on song changes, then stream cached `init` and `frame` payloads at 1x real-time speed (50 FPS).
 - [ ] T022 [P] [US3] Scaffold the React Main Layout in `ui/src/App.tsx`.
 - [ ] T023 [P] [US3] Implement `ui/src/components/WaveformView.tsx` utilizing `wavesurfer.js` to render the song timeline via static file fetch, enabling the play button only when `ready` is received.
 - [ ] T024 [P] [US3] Implement `ui/src/components/MathParamsPanel.tsx` to reactively display `q_buffer` parameters from WebSocket state.

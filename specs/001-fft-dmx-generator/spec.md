@@ -49,21 +49,22 @@ As a developer or designer, I want an inspection UI running in a browser so that
 
 **Why this priority**: While the DMX file is the primary artifact, this UI provides massive value for verifying shader logic visually.
 
-**Independent Test**: Can be fully tested by launching the dockerized setup, navigating to the specific port on `localhost`, selecting a song in the engine CLI, and observing the waveform, math parameters, and reactive 2D canvas running at 50fps.
+**Independent Test**: Can be fully tested by launching the dockerized setup, navigating to the specific port on `localhost`, selecting a song from the UI dropdown, and observing the waveform, math parameters, and reactive 2D canvas running at 50fps.
 
 **Acceptance Scenarios**:
 
-1. **Given** the python backend engine is running, **When** it begins processing a song, **Then** it bakes the DMX file at maximum speed without UI throttling.
-2. **Given** the DMX generation finishes, **When** the backend is ready, **Then** it emits a `ready` event over a WebSocket on port 3301.
-3. **Given** the frontend UI container is running, **When** I navigate to port 3300 in a browser, **Then** I see the React frontend load with the song waveform loaded via static HTTP mount.
+1. **Given** the python backend engine is running in UI playback mode, **When** I open the frontend on port 3300, **Then** I see a dropdown populated from `data/songs/*.mp3`.
+2. **Given** I pick a song from the UI dropdown, **When** the frontend sends `select_song` over the WebSocket on port 3301, **Then** the backend bakes the DMX file at maximum speed without UI throttling.
+3. **Given** the DMX generation finishes, **When** the backend is ready, **Then** it emits `ready` and `init` events over the WebSocket on port 3301.
 4. **Given** the frontend receives the `ready` event, **When** I select "Play", **Then** the UI starts the audio playback and sends a `play` intent to the backend to begin streaming frames at 50fps in sync.
 5. **Given** the frontend is connected to the backend, **When** the backend emits a frame, **Then** the canvas draws the updated intensities (represented as simple colored geometry corresponding to fixtures) relying on the client's GPU via the HTML5 Canvas API.
-6. **Given** the engine stops or finishes streaming the song, **When** the end frame is emitted, **Then** the UI pauses the waveform playback and stops drawing new frames.
+6. **Given** the engine stops or finishes streaming the song, **When** the `end` frame is emitted, **Then** the UI pauses the waveform playback and stops drawing new frames.
 
 ### Edge Cases
 
 - If the WebSocket server fails to bind port 3301, the system logs an error but continues writing the DMX file (the Canvas UI is optional).
 - If the browser client disconnects during rendering, the engine continues unhindered; it does not block waiting for the client.
+- If the browser selects a song that is missing artifacts or fails validation, the backend emits an error event and does not write a partial show file.
 - If the song directory is empty or missing, the system shows a clear message and exits without starting processing.
 - If the selected song or its required analysis inputs are unreadable or invalid, the system aborts with a clear error and does not write a partial show file.
 - If any FFT frame cannot be resolved into exactly 5 canonical energy values from a supported upstream layout, the system aborts with a clear error and does not attempt rendering.

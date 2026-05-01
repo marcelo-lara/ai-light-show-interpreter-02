@@ -68,6 +68,20 @@ textarea {
   font-size: 0.95rem;
 }
 
+.song-select {
+  min-width: min(28rem, 100%);
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.65rem;
+  background: var(--surface-alt);
+  color: #f3f3f3;
+  border: 1px solid var(--border);
+}
+
+.song-select:disabled {
+  opacity: 0.8;
+  cursor: default;
+}
+
 .status-pill {
   padding: 0.35em 0.75em;
   background: rgba(144, 0, 221, 0.15);

@@ -1,19 +1,76 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useEngineSocket } from "./hooks/useEngineSocket";
 import WaveformView from "./components/WaveformView";
 import MathParamsPanel from "./components/MathParamsPanel";
 import EngineCanvas from "./components/EngineCanvas";
 
+type SongOption = {
+  fileName: string;
+  stem: string;
+};
+
 export default function App() {
   const [playing, setPlaying] = useState(false);
-  const { state, sendPlay, status } = useEngineSocket();
+  const [songs, setSongs] = useState<SongOption[]>([]);
+  const [selectedSong, setSelectedSong] = useState("");
+  const { state, sendPlay, sendSelectSong, status } = useEngineSocket();
 
-  const audioUrl = useMemo(() => {
-    if (!state.songName) {
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadSongs = async () => {
+      try {
+        const response = await fetch("/api/songs", { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`Failed to load songs: ${response.status}`);
+        }
+        const payload = (await response.json()) as { songs?: SongOption[] };
+        setSongs(Array.isArray(payload.songs) ? payload.songs : []);
+      } catch (error) {
+        if ((error as DOMException).name === "AbortError") {
+          return;
+        }
+        console.error(error);
+        setSongs([]);
+      }
+    };
+
+    void loadSongs();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (state.songName) {
+      setSelectedSong(state.songName);
+      return;
+    }
+
+    setSelectedSong((current) => {
+      if (current && songs.some((song) => song.stem === current)) {
+        return current;
+      }
+      return "";
+    });
+  }, [songs, state.songName]);
+
+  const activeSong = state.songName ?? (selectedSong || null);
+
+  const activeSongFileName = useMemo(() => {
+    if (!activeSong) {
       return null;
     }
-    return `/songs/${state.songName}.mp3`;
-  }, [state.songName]);
+    return songs.find((song) => song.stem === activeSong)?.fileName ?? `${activeSong}.mp3`;
+  }, [activeSong, songs]);
+
+  const audioUrl = useMemo(() => {
+    if (!activeSongFileName) {
+      return null;
+    }
+    return `/songs/${encodeURIComponent(activeSongFileName)}`;
+  }, [activeSongFileName]);
 
   const handlePlay = () => {
     if (!state.ready || !audioUrl) {
@@ -29,12 +86,38 @@ export default function App() {
     }
   }, [status]);
 
+  const handleSongChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextSong = event.target.value;
+    setSelectedSong(nextSong);
+    setPlaying(false);
+    if (nextSong) {
+      sendSelectSong(nextSong);
+    }
+  };
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <div>
           <div className="logo">Canvas Output</div>
-          <div className="song-name">{state.songName || "Waiting for song..."}</div>
+          {songs.length > 0 ? (
+            <select
+              className="song-select"
+              value={activeSong ?? ""}
+              onChange={handleSongChange}
+              disabled={status === "loading..."}
+              aria-label="Available songs"
+            >
+              <option value="">Select a song</option>
+              {songs.map((song) => (
+                <option key={song.fileName} value={song.stem}>
+                  {song.stem}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="song-name">No songs available</div>
+          )}
         </div>
         <div className="status-pill">{status}</div>
       </header>
@@ -50,7 +133,7 @@ export default function App() {
         <button className="action-button" onClick={handlePlay} disabled={!state.ready || !audioUrl || playing}>
           {playing ? "Playing..." : "Play"}
         </button>
-        <div className="control-meta">Audio source: {audioUrl ?? "waiting for backend..."}</div>
+        <div className="control-meta">Audio source: {audioUrl ?? "waiting for song selection..."}</div>
       </div>
 
       <div className="content-grid">

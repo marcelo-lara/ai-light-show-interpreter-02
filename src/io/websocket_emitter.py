@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +31,7 @@ class EngineWebSocketServer:
         self._state_cache: list[MusicalStateBuffer] = []
         self._ready = threading.Event()
         self._play_task: Optional[asyncio.Task[Any]] = None
+        self._song_selection_handler: Optional[Callable[[str], None]] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._playback_started = threading.Event()
         self._playback_finished = threading.Event()
@@ -49,14 +50,22 @@ class EngineWebSocketServer:
                 while True:
                     message = await websocket.receive_text()
                     event = json.loads(message)
-                    if event.get("type") == "play":
-                        payload = event.get("data", {})
-                        start_time = float(payload.get("start_time", 0.0))
-                        await self._start_playback(start_time)
+                    await self._handle_event(event)
             except WebSocketDisconnect:
                 pass
             finally:
                 self._remove_client(websocket)
+
+    async def _handle_event(self, event: Dict[str, Any]) -> None:
+        event_type = event.get("type")
+        payload = event.get("data", {})
+        if event_type == "play":
+            start_time = float(payload.get("start_time", 0.0))
+            await self._start_playback(start_time)
+        elif event_type == "select_song":
+            song_name = str(payload.get("song_name", "")).strip()
+            if song_name:
+                await self._select_song(song_name)
 
     def _add_client(self, websocket: WebSocket) -> None:
         with self._client_lock:
@@ -83,6 +92,22 @@ class EngineWebSocketServer:
 
     def set_evaluator(self, evaluator: Evaluator) -> None:
         self.evaluator = evaluator
+
+    def set_song_name(self, song_name: str) -> None:
+        self.song_name = song_name
+
+    def set_song_selection_handler(self, handler: Callable[[str], None]) -> None:
+        self._song_selection_handler = handler
+
+    def clear_ready(self) -> None:
+        self._ready.clear()
+
+    def notify_error(self, message: str) -> None:
+        if self._loop and self._loop.is_running():
+            asyncio.run_coroutine_threadsafe(self._broadcast_error(message), self._loop)
+
+    async def _broadcast_error(self, message: str) -> None:
+        await self._broadcast({"type": "error", "data": {"message": message}})
 
     def notify_ready(self) -> None:
         self._ready.set()
@@ -146,10 +171,38 @@ class EngineWebSocketServer:
         await self._broadcast({"type": "end"})
         self._playback_finished.set()
 
+    async def _stop_playback(self) -> None:
+        if self._play_task and not self._play_task.done():
+            self._play_task.cancel()
+            try:
+                await self._play_task
+            except asyncio.CancelledError:
+                pass
+        self._play_task = None
+        self._playback_started.clear()
+        self._playback_finished.clear()
+        await self._broadcast({"type": "end"})
+
+    async def _select_song(self, song_name: str) -> None:
+        if self._song_selection_handler is None:
+            return
+        await self._stop_playback()
+        self.clear_ready()
+        await self._broadcast({"type": "loading", "data": {"song_name": song_name}})
+        try:
+            await asyncio.to_thread(self._song_selection_handler, song_name)
+        except Exception as exc:
+            await self._broadcast_error(str(exc))
+
     def wait_for_playback(self, timeout: float | None = None) -> bool:
         if not self._playback_started.wait(timeout=timeout):
             return False
         return self._playback_finished.wait(timeout=timeout)
+
+    def wait_forever(self, poll_interval: float = 0.5) -> None:
+        sentinel = threading.Event()
+        while True:
+            sentinel.wait(timeout=poll_interval)
 
     def _build_init_payload(self) -> Dict[str, Any]:
         if self.evaluator is None:

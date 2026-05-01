@@ -14,7 +14,7 @@ services:
       - PYTEST_ADDOPTS=-o cache_dir=/tmp/pytest-cache
     ports:
       - "3301:3301"
-    command: []
+    command: ["--ui-playback"]
 
   ui:
     build:

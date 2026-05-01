@@ -158,11 +158,14 @@
 **Description**: Bidirectional JSON stream connecting UI on port 3300 to backend on port 3301.
 **Event Shapes**: 
 
+- `select_song`: (UI->Backend) Dispatched when the user chooses a song from the browser dropdown.
+- `loading`: (Backend->UI) Emitted after `select_song` while the backend is baking the requested `.dmx` file.
 - `ready`: (Backend->UI) Emitted when the `.dmx` backend rendering is fully completed. Unlocks the "play" button.
 - `play`: (UI->Backend) Dispatched when the user hits play in the UI, signalling the backend to stream out the pre-calculated or lazily evaluated visualization frames at 50 FPS.
 - `init`: (Backend->UI) Dispatched containing dimensions (`canvas.width` / `canvas.height`) and the `fixtures`.
 - `frame`: (Backend->UI) Dispatched at 50 FPS after playback starts. Carries the entire `q_buffer` global snapshot, actual `fixtures` intensities, and a down-sampled `canvas_mesh.pixels` matrix for rapid GPU painting using simple geometric indicators via HTML5 Canvas.
 - `end`: (Backend->UI) Dispatched exactly once when the render playback finishes gracefully.
+- `error`: (Backend->UI) Dispatched when song selection or baking fails.
 
 **Constraints**:
 - The event payloads must not write to the host filesystem.

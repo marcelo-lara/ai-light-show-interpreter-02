@@ -87,6 +87,18 @@ export function useEngineSocket() {
 
       socket.addEventListener("message", (event) => {
         const data = JSON.parse(event.data);
+        if (data.type === "loading") {
+          const payload = data.data;
+          setState((current) => ({
+            ...current,
+            songName: payload.song_name ?? current.songName,
+            ready: false,
+            time: 0,
+            duration: 0,
+            canvasMesh: null,
+          }));
+          setStatus("loading...");
+        }
         if (data.type === "ready") {
           setState((current) => ({ ...current, ready: true }));
           setStatus("ready");
@@ -123,6 +135,11 @@ export function useEngineSocket() {
         if (data.type === "end") {
           setStatus("finished");
         }
+        if (data.type === "error") {
+          const message = String(data.data?.message ?? "error");
+          setState((current) => ({ ...current, ready: false }));
+          setStatus(`error: ${message}`);
+        }
       });
 
       socket.addEventListener("close", () => {
@@ -154,5 +171,13 @@ export function useEngineSocket() {
     socketRef.current.send(JSON.stringify({ type: "play", data: { start_time: startTime } }));
   };
 
-  return { state, status, sendPlay };
+  const sendSelectSong = (songName: string) => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      setStatus("disconnected");
+      return;
+    }
+    socketRef.current.send(JSON.stringify({ type: "select_song", data: { song_name: songName } }));
+  };
+
+  return { state, status, sendPlay, sendSelectSong };
 }
