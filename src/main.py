@@ -6,8 +6,9 @@ import re
 from pathlib import Path
 from typing import Iterable
 
-from src.io.show_compiler import compile_dmx_show
 from src.io.layout_debug import export_stage_layout_svg
+from src.io.show_compiler import compile_dmx_show
+from src.io.websocket_emitter import EngineWebSocketServer
 
 SONG_DIRECTORY = Path("data/songs")
 SHOW_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -38,6 +39,21 @@ def artifact_dir_for_song(song_path: Path) -> Path:
 
 def artifact_missing(song_path: Path) -> bool:
     return not artifact_dir_for_song(song_path).is_dir()
+
+
+def resolve_song_choice(song_value: str, songs: list[Path]) -> Path:
+    normalized = song_value.strip()
+    if not normalized:
+        raise ValueError("Song name cannot be empty.")
+
+    candidates = {song.name.lower(): song for song in songs}
+    candidates.update({song.stem.lower(): song for song in songs})
+    match = candidates.get(normalized.lower())
+    if match is None:
+        raise ValueError(f"Song not found: {song_value}")
+    if artifact_missing(match):
+        raise ValueError(f"Selected song is missing artifacts: {match.stem}")
+    return match
 
 
 def run_curses_selector(stdscr: "curses._CursesWindow", songs: list[Path]) -> Path:
@@ -99,6 +115,15 @@ def main() -> int:
         help="Export an SVG debug view of the stage layout to data/shows/ and exit.",
     )
     parser.add_argument(
+        "--song",
+        help="Optional song file or stem to render without opening the selector.",
+    )
+    parser.add_argument(
+        "--ui-playback",
+        action="store_true",
+        help="Keep the WebSocket server alive after baking so the UI can request playback.",
+    )
+    parser.add_argument(
         "--layout-output",
         default="data/shows/stage-layout.svg",
         help="Output path for --export-layout.",
@@ -126,14 +151,30 @@ def main() -> int:
         return 1
 
     try:
-        selected_path = curses.wrapper(run_curses_selector, songs)
+        if args.song:
+            selected_path = resolve_song_choice(args.song, songs)
+        else:
+            selected_path = curses.wrapper(run_curses_selector, songs)
     except KeyboardInterrupt:
         print("Interrupted before rendering began.")
         return 1
+    except ValueError as exc:
+        print(f"Error: {exc}")
+        return 1
+
+    websocket_server = None
+    if args.ui_playback:
+        websocket_server = EngineWebSocketServer(evaluator=None, song_name=selected_path.stem)
+        websocket_server.start()
 
     try:
-        output_path = compile_dmx_show(selected_path, show_name)
+        output_path = compile_dmx_show(selected_path, show_name, websocket_server=websocket_server)
+        if websocket_server is not None:
+            websocket_server.notify_ready()
         print(f"Show written to: {output_path}")
+        if websocket_server is not None:
+            print("Waiting for a UI client to start playback on ws://0.0.0.0:3301/ws/canvas")
+            websocket_server.wait_for_playback()
         return 0
     except Exception as exc:
         print(f"Failed to compile show: {exc}")

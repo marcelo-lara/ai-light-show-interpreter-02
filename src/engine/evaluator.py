@@ -85,3 +85,35 @@ class Evaluator:
             )
 
         return render_states
+
+    def render_canvas_mesh(self, state: dict, resolution: tuple[int, int] = (20, 10)) -> dict[str, object]:
+        width, height = resolution
+        xs = np.linspace(0.0, self.canvas_width, width)
+        ys = np.linspace(0.0, self.canvas_height, height)
+        grid_x, grid_y = np.meshgrid(xs, ys)
+        coords = np.stack([grid_x.ravel(), grid_y.ravel()], axis=-1)
+
+        warped = self._warp_coordinates(coords, state)
+        pulse = radial_pulse(warped, state)
+        wave = linear_wave(warped, state)
+        intensity = additive_blend(pulse, wave)
+        intensity = multiplicative_blend(intensity, 1.0 + float(state["bands"][1]) * 0.1)
+
+        cue = float(state.get("cue_trigger", 0.0))
+        red = np.clip(intensity * (float(state["bands"][1]) * 0.9 + 0.2) + cue * 0.2, 0.0, 1.0)
+        green = np.clip(intensity * (float(state["bands"][2]) * 0.9 + 0.15) + cue * 0.15, 0.0, 1.0)
+        blue = np.clip(intensity * (float(state["bands"][3]) * 0.8 + 0.1) + cue * 0.1, 0.0, 1.0)
+
+        pixels = []
+        for row_index in range(height):
+            row = []
+            for col_index in range(width):
+                idx = row_index * width + col_index
+                row.append([
+                    int(red[idx] * 255),
+                    int(green[idx] * 255),
+                    int(blue[idx] * 255),
+                ])
+            pixels.append(row)
+
+        return {"resolution": [width, height], "pixels": pixels}

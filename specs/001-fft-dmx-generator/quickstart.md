@@ -17,15 +17,15 @@ docker compose up -d --build
 
 ## 3. Accessing the Interface
 
-1. Start processing your show using the CLI in the engine container.
+1. Start processing your show using the CLI in the Python container.
    ```bash
-   docker compose run --rm engine python src/main.py
+   docker compose run --service-ports --rm light-show-cli --song "Cinderella - Ella Lee" --ui-playback
    ```
 2. Once the song begins rendering (or after you've selected a song via CLI), open your browser:
    ```text
-   http://localhost:8080
+   http://localhost:3300
    ```
-*(Port depends on final bind defined in `docker-compose.yml`)*
+*(The UI is exposed on port `3300` and the backend WebSocket runs on port `3301`.)
 
 ## 4. UI Interactions
 - **Header (Left)**: View the current song name originating from `/data/songs`.

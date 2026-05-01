@@ -7,6 +7,7 @@ from typing import Iterable
 from src.engine._q_buffer import build_musical_state_stream
 from src.engine.evaluator import Evaluator
 from src.io.dmx_writer import DmxWriter
+from src.io.websocket_emitter import EngineWebSocketServer
 
 
 def _load_json(path: Path) -> dict:
@@ -23,6 +24,7 @@ def compile_dmx_show(
     stage_virtual_canvas_path: Path | None = None,
     shows_root: Path | None = None,
     max_frames: int | None = None,
+    websocket_server: EngineWebSocketServer | None = None,
 ) -> Path:
     song_path = Path(song_path)
     artifact_root = artifact_root or Path("data/artifacts")
@@ -57,6 +59,10 @@ def compile_dmx_show(
     musical_state_stream = build_musical_state_stream(song_artifact_dir)
     if max_frames is not None:
         musical_state_stream = musical_state_stream[:max_frames]
+
+    if websocket_server is not None:
+        websocket_server.set_evaluator(evaluator)
+        websocket_server.cache_states(musical_state_stream)
 
     shows_root.mkdir(parents=True, exist_ok=True)
     output_path = shows_root / f"{song_name}.{show_name}.dmx"

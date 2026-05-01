@@ -1,0 +1,171 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+  background: #090909;
+  color: #f3f3f3;
+  --bg: #090909;
+  --surface: #121212;
+  --surface-alt: #1b1b1b;
+  --border: #222;
+  --accent: #9000dd;
+  --text-muted: #b1b1b8;
+  --padding: 0.5em;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: #f3f3f3;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.app-header,
+.controls-row,
+.canvas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app-header {
+  padding: var(--padding);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.logo,
+.song-name,
+.status-pill {
+  margin: 0;
+}
+
+.logo {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.song-name {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.status-pill {
+  padding: 0.35em 0.75em;
+  background: rgba(144, 0, 221, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(144, 0, 221, 0.35);
+}
+
+.hero {
+  padding: var(--padding);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.hero-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.hero-subtitle {
+  color: var(--text-muted);
+  margin-top: 0.25em;
+}
+
+.controls-row {
+  padding: var(--padding);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.action-button {
+  padding: 0.5em 1em;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.panel,
+.canvas-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: var(--padding);
+}
+
+.card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.parameter-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.parameter-row strong {
+  color: #f3f3f3;
+}
+
+.big-time,
+.time-display {
+  font-size: 1.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  margin: 0.5rem 0;
+}
+
+.engine-canvas {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  background: #090909;
+  border: 1px solid var(--border);
+}
+
+.waveform-row {
+  padding: var(--padding);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.waveform-container {
+  width: 100%;
+  min-height: 140px;
+}
+
+.control-meta {
+  color: var(--text-muted);
+}
