@@ -13,3 +13,9 @@ shell commands, and other important information, read the current plan:
 - For v1 behavior, moving heads target named POIs from `data/fixtures/pois.json`; do not design v1 around dynamic brightest-region search across the canvas.
 - The canonical DMX output naming convention is `data/shows/{song_name}.{show_name}.dmx`.
 - During spec work, keep implementation-detail decisions in planning artifacts and keep the feature spec focused on user-visible behavior, acceptance criteria, and edge-case handling.
+
+## graphify
+
+Before answering architecture or codebase questions, read `graphify-out/GRAPH_REPORT.md` if it exists.
+If `graphify-out/wiki/index.md` exists, navigate it for deep questions.
+Type `/graphify` in Copilot Chat to build or update the knowledge graph.
