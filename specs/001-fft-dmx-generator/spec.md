@@ -136,6 +136,13 @@ As a developer or designer, I want an inspection UI running in a browser so that
 - **SC-007**: The optional Python WebSocket emitter loop MUST execute rapidly without bottlenecking the main bake loop, introducing less than a 2ms penalty per 50 FPS cycle.
 - **SC-008**: The Canvas Output UI correctly syncs to the visual playback timeline and reflects new shader matrices via the `window.requestAnimationFrame()` cycle.
 
+## Validation Evidence
+
+- **2026-05-06**: `docker compose run --rm --entrypoint pytest light-show-cli` passed with 29 tests covering the CLI selector, FFT-to-DMX pipeline, websocket emitter, shader contracts, and error handling.
+- **2026-05-06**: `tests/unit/test_websocket_emitter.py::test_playback_loop_overhead_stays_under_two_ms_per_frame` passed, providing an executable check for SC-007.
+- **2026-05-06**: `docker compose run --rm --entrypoint npm ui run build` passed, validating the current React/Vite frontend code path.
+- **2026-05-06**: `docker compose up -d --build` completed successfully, `http://localhost:3300/api/songs` returned the mounted MP3 inventory, and the browser UI loaded on port `3300` with a live websocket connection to port `3301`.
+
 ## Assumptions
 
 - The application runs in an interactive terminal environment that can display a navigable song-selection interface.

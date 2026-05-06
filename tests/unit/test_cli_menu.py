@@ -110,6 +110,26 @@ def test_main_defaults_to_main_show_when_omitted(monkeypatch: pytest.MonkeyPatch
     assert "main-show.dmx" in capsys.readouterr().out
 
 
+def test_export_layout_defaults_outside_data_shows(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    captured: dict[str, Path] = {}
+
+    def fake_export(output_path: Path) -> Path:
+        captured["output_path"] = output_path
+        return output_path
+
+    monkeypatch.setattr(cli_main, "export_stage_layout_svg", fake_export)
+    monkeypatch.setattr(sys, "argv", ["main.py", "--export-layout"])
+
+    exit_code = cli_main.main()
+
+    assert exit_code == 0
+    assert captured["output_path"] == Path("stage-layout.svg")
+    assert "data/shows" not in str(captured["output_path"])
+    assert "stage-layout.svg" in capsys.readouterr().out
+
+
 def test_cli_menu_renders_within_one_second() -> None:
     script = """
 from pathlib import Path

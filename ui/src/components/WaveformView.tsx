@@ -8,7 +8,7 @@ interface WaveformViewProps {
 
 export default function WaveformView({ audioUrl, isPlaying }: WaveformViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const waveRef = useRef<WaveSurfer | null>(null);
+  const waveRef = useRef<ReturnType<typeof WaveSurfer.create> | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) {

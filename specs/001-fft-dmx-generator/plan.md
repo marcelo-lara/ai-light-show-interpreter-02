@@ -5,7 +5,7 @@
 
 ## Summary
 
-The user requested a simple React-based Web UI to view the complete Canvas applied with shaders, mathematical parameters of the shader engine, and the fixtures positioned on the virtual stage. This interface acts as an inspection tool (similar to BeatDrop-Music-Visualizer) to see the exact output of the shaders engine statically or over time, rather than a real-time standalone visualizer. This Canvas UI must be completely separated from the Python `/src` engine folder, residing in an isolated `/ui` Docker service, using a WebSocket stream to receive frame updates from the engine without writing intermediate artifacts to `/data`. The UI will leverage React with `wavesurfer.js` for audio playback and standard HTML5 `<canvas>` API for GPU-accelerated rendering.
+The user requested a simple React-based Web UI to view the complete Canvas applied with shaders, mathematical parameters of the shader engine, and the fixtures positioned on the virtual stage. This interface acts as an inspection tool (similar to BeatDrop-Music-Visualizer) to see the exact output of the shader engine statically or over time, rather than a real-time standalone visualizer. This Canvas UI is separated from the Python `/src` engine folder in an isolated `/ui` Docker service and uses a WebSocket stream to receive frame updates from the engine without writing intermediate artifacts to `/data`. The current Docker workflow serves the UI with Vite and mounts song audio into the frontend service for playback.
 
 ## Technical Context
 
@@ -13,7 +13,7 @@ The user requested a simple React-based Web UI to view the complete Canvas appli
 **Primary Dependencies**: FastAPI / WebSockets (Python), Vite, React, wavesurfer.js (Frontend)
 **Storage**: N/A (WebSocket streaming; final DMX targets `/data/shows/`)
 **Testing**: `pytest` (Backend WS API), browser manual test (Frontend)
-**Target Platform**: Docker-First environment (2 services: python-backend, node/nginx-ui)
+**Target Platform**: Docker-First environment (2 services: python-backend, Vite React UI)
 **Project Type**: Mixed CLI/WebSocket Backend Engine + React Web Frontend  
 **Performance Goals**: 50 FPS WebSocket data streaming to the browser over `localhost` mapped efficiently to a GPU-backed Canvas. 
 **Constraints**: Absolute separation of `/ui` from `/src`, no modification to `/data` beyond DMX output (`Single Output Target`). Docker-first isolated environment.
@@ -70,7 +70,7 @@ ui/                      # New UI Service (Vite + React)
 │   │   └── EngineCanvas.tsx # Handles HTML5 Canvas GPU rendering of the shader output
 │   └── hooks/
 │       └── useEngineSocket.ts
-└── nginx.conf           # (Optional) specific overrides for Docker deploy
+└── nginx.conf           # Optional future static deploy config; not used by the current Docker workflow
 ```
 
-**Structure Decision**: A new top-level `ui/` directory containing a Vite React app, served by a Docker container. `src/io/websocket_emitter.py` handles the transmission of engine math/mesh state to connected UI clients.
+**Structure Decision**: A new top-level `ui/` directory containing a Vite React app, served by a Docker container running the Vite dev server. `src/io/websocket_emitter.py` handles the transmission of engine math/mesh state to connected UI clients.

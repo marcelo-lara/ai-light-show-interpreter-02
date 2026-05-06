@@ -113,7 +113,7 @@ def main() -> int:
     parser.add_argument(
         "--export-layout",
         action="store_true",
-        help="Export an SVG debug view of the stage layout to data/shows/ and exit.",
+        help="Export an SVG debug view of the stage layout and exit.",
     )
     parser.add_argument(
         "--song",
@@ -126,7 +126,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--layout-output",
-        default="data/shows/stage-layout.svg",
+        default="stage-layout.svg",
         help="Output path for --export-layout.",
     )
     args = parser.parse_args()

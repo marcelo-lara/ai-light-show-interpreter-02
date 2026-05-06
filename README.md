@@ -99,7 +99,7 @@ docker compose run --rm light-show-cli --song "Cinderella - Ella Lee" --show-nam
 docker compose run --rm light-show-cli --export-layout
 ```
 
-The SVG includes moving-head beam lines pointing to each fixture's current default `target_poi`.
+The SVG is written to `./stage-layout.svg` by default and includes moving-head beam lines pointing to each fixture's current default `target_poi`.
 
 8. Verify the output file exists:
 

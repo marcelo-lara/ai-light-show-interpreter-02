@@ -9,11 +9,11 @@ This feature introduces a live WebSocket-driven Web UI that renders a live 2D re
 
 ## 2. Docker Deployment
 
-Launch both the python engine service and the static UI server.
+Launch both the Python engine service and the Vite UI service.
 ```bash
 docker compose up -d --build
 ```
-> *Note:* The default `light-show-cli` service now starts in `--ui-playback` mode so the browser can drive song selection.
+> *Note:* The default `light-show-cli` service now starts in `--ui-playback` mode so the browser can drive song selection over the WebSocket service on port `3301`.
 
 ## 3. Accessing the Interface
 
