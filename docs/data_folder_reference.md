@@ -63,7 +63,7 @@ data/
       lighting_score.md
       sections.json
   shows/
-    <Song - Artist>.show_<yyyymmdd>.dmx
+    <Song - Artist>.<Show Name>.dmx
   reference/
     <Song - Artist>/
       moises/
@@ -103,7 +103,7 @@ Per-song consumer-facing outputs. These files are more compact and presentation-
 
 ### `data/shows/`
 
-Rendered show playback artifacts. Explicit DMX canvas renders write a binary `.dmx` file here as `{song}.show_{yyyymmdd}.dmx`, so rerendering the same song on the same date overwrites the existing show artifact.
+Rendered show playback artifacts. Explicit DMX canvas renders write a binary `.dmx` file here as `{song_name}.{show_name}.dmx`.
 
 ### `data/fixtures/`
 

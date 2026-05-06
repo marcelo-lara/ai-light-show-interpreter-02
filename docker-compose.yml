@@ -1,0 +1,31 @@
+services:
+  light-show-cli:
+    build: .
+    tty: true
+    stdin_open: true
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+      - ./data:/app/data:ro
+      - ./data/shows:/app/data/shows:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - PYTEST_ADDOPTS=-o cache_dir=/tmp/pytest-cache
+    ports:
+      - "3301:3301"
+    command: ["--ui-playback"]
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "3300:3300"
+    volumes:
+      - ./ui:/app:rw
+      - ui_node_modules:/app/node_modules
+      - ./data/songs:/app/public/songs:ro
+
+volumes:
+  ui_node_modules:

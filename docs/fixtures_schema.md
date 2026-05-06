@@ -25,6 +25,20 @@ Example:
 }
 ```
 
+Current normalized rig snapshot:
+
+```json
+[
+  {"id": "mini_beam_prism_l", "location": {"x": 0.15, "y": 0.2, "z": 0.0}},
+  {"id": "mini_beam_prism_r", "location": {"x": 0.985, "y": 0.2, "z": 0.0}},
+  {"id": "head_el150", "location": {"x": 0.4, "y": 0.0, "z": 0.0}},
+  {"id": "parcan_pl", "location": {"x": 0.2, "y": 0.1, "z": 0.0}},
+  {"id": "parcan_l", "location": {"x": 0.4, "y": 0.0, "z": 0.0}},
+  {"id": "parcan_r", "location": {"x": 0.6, "y": 0.0, "z": 0.0}},
+  {"id": "parcan_pr", "location": {"x": 0.8, "y": 0.1, "z": 0.0}}
+]
+```
+
 ## 2. Fixture templates
 
 Each reusable fixture model is a file named `data/fixtures/fixture.<type>.<model>.json`.

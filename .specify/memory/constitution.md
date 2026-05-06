@@ -24,7 +24,7 @@ Sync Impact Report:
 The `/data` folder is strictly read-only. We must never mutate source audio, artifacts, or intelligence outputs. This ensures data integrity from the upstream song analyzer and prevents accidental corruption of the semantic intelligence artifacts.
 
 ### II. Single Output Target
-The ONLY write operation allowed by this repository is compiling `.dmx` binary show files (e.g., `[Song].show_[Date].dmx`) inside the `/data/shows/` directory. All other files and directories within the `/data` folder are strictly off-limits for write operations. No other artifacts or intermediate data are generated.
+The ONLY write operation allowed by this repository is compiling `.dmx` binary show files (e.g., `[Song].[Show Name].dmx`) inside the `/data/shows/` directory. All other files and directories within the `/data` folder are strictly off-limits for write operations. No other artifacts or intermediate data are generated.
 
 ### III. Core Pipeline (The Baker)
 The rendering pipeline operates strictly as a rasterizer and baker. It must follow this exact sequence:
@@ -40,7 +40,7 @@ All implementations, tasks, and scripts must be run inside Docker containers. Lo
 The interpreter consumes specific semantic artifacts:
 * `sections.json`: Determines section-based rendering structure/logic.
 * `essentia/fft_bands.json`: Provides raw, frame-by-frame frequency energy levels.
-* `song_event_timeline.json`: (Optional) Triggers instantaneous mathematical "Hard Cuts" or coordinate shifts. If missing or untrusted, the system MUST fallback to dynamically detecting transients (sudden energy spikes) directly from the `essentia/fft_bands.json` stream.
+* `lighting_events.json`: (Optional) Triggers instantaneous mathematical "Hard Cuts" or coordinate shifts. If missing or untrusted, the system MUST fallback to dynamically detecting transients (sudden energy spikes) directly from the `essentia/fft_bands.json` stream.
 
 ### VI. Code Organization and Structure
 Do not create large files. As a guideline, files should generally not exceed 200 lines (though this is not a strict limit). Instead of large monolithic files, create well-organized folders with intended purposes and modularized code. ALWAYS follow best practices for Python development.
